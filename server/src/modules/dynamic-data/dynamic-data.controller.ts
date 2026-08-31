@@ -8,13 +8,18 @@ import {
   Body,
   Query,
 } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
 import { DynamicDataService } from "./dynamic-data.service";
 
+@ApiTags("Dynamic Data (동적 CRUD)")
 @Controller("api/dynamic-data")
 export class DynamicDataController {
   constructor(private readonly dataService: DynamicDataService) {}
 
   @Post(":projectId/:tableName")
+  @ApiOperation({ summary: "데이터 생성 (INSERT)" })
+  @ApiParam({ name: "projectId", description: "프로젝트 ID" })
+  @ApiParam({ name: "tableName", description: "테이블명" })
   async create(
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
@@ -24,6 +29,9 @@ export class DynamicDataController {
   }
 
   @Get(":projectId/:tableName")
+  @ApiOperation({ summary: "데이터 목록 조회 (SELECT Pagination)" })
+  @ApiQuery({ name: "page", required: false, example: 1 })
+  @ApiQuery({ name: "limit", required: false, example: 20 })
   async findAll(
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
@@ -39,6 +47,8 @@ export class DynamicDataController {
   }
 
   @Get(":projectId/:tableName/:id")
+  @ApiOperation({ summary: "데이터 삭제 (DELETE)" })
+  @ApiOperation({ summary: "단일 데이터 조회 (SELECT BY ID)" })
   async findOne(
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
@@ -48,6 +58,7 @@ export class DynamicDataController {
   }
 
   @Patch(":projectId/:tableName/:id")
+  @ApiOperation({ summary: "데이터 수정 (UPDATE)" })
   async update(
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
