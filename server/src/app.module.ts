@@ -4,6 +4,7 @@ import { DynamicSchemaModule } from "./modules/dynamic-schema/dynamic-schema.mod
 import { DynamicDataModule } from "./modules/dynamic-data/dynamic-data.module";
 import { GeneratorModule } from "./modules/generator/generator.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
+import { AuthModule } from "./modules/auth/auth.module";
 
 @Module({
   imports: [
@@ -11,6 +12,7 @@ import { WorkflowModule } from "./modules/workflow/workflow.module";
     DynamicDataModule,
     GeneratorModule,
     WorkflowModule,
+    AuthModule,
   ],
   controllers: [],
   providers: [SupabaseService],

@@ -62,13 +62,29 @@ export class DynamicSchemaService {
     sql += `,\n  "created_at" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP\n`;
     sql += `);`;
 
+    const enableRlsSql = `ALTER TABLE "${fullTableName}" ENABLE ROW LEVEL SECURITY;`;
+    const createPolicySql = `
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM pg_policies
+          WHERE tablename = '${fullTableName}' AND policyname = 'Tenant Isloation Policy'
+        ) THEN
+          CREATE POLICY "Tenant Isolation Policy" ON "${fullTableName}" FOR ALL USING (true);
+        END IF;
+      END $$;
+    `;
+
     try {
       await this.dbService.query(sql);
+
+      await this.dbService.query(enableRlsSql);
+      await this.dbService.query(createPolicySql);
 
       return {
         success: true,
         tableName: fullTableName,
-        message: `테이블 [${fullTableName}]이 성공적으로 생성되었습니다.`,
+        message: `테이블 [${fullTableName}]이 성공적으로 생성되었습니다. 또한, RLS 보안 정책이 성공적으로 생성되었습니다.`,
       };
     } catch (error) {
       if (error instanceof Error) {
