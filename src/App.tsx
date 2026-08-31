@@ -1,7 +1,11 @@
 import React from "react";
 import { LayoutGrid, Database, Play } from "lucide-react";
+import { useEditorStore } from "./store/useEditorStore";
+import { CanvasRenderer } from "./components/CanvasRenderer";
 
 export default function App() {
+  const { rootNode } = useEditorStore();
+
   return (
     <div className="flex h-screen w-screen flex-col bg-slate-900 text-white">
       {/* Top Header */}
@@ -14,17 +18,26 @@ export default function App() {
         </div>
 
         <div className="flex items-center bg-slate-800 p-1 rounded-lg space-x-1">
-          <button className="flex items-center space-x-1 px-3 py-1 bg-slate-700 text-xs rounded font-medium">
+          <button
+            type="button"
+            className="flex items-center space-x-1 px-3 py-1 bg-slate-700 text-xs rounded font-medium"
+          >
             <LayoutGrid className="w-3.5 h-3.5" />
             <span>UI Builder</span>
           </button>
-          <button className="flex items-center space-x-1 px-3 py-1 hover:bg-slate-700 text-xs rounded font-medium text-slate-400">
+          <button
+            type="button"
+            className="flex items-center space-x-1 px-3 py-1 hover:bg-slate-700 text-xs rounded font-medium text-slate-400"
+          >
             <Database className="w-3.5 h-3.5" />
             <span>DB Builder</span>
           </button>
         </div>
 
-        <button className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-white px-3 py-1.5 rounded font-medium transition">
+        <button
+          type="button"
+          className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-white px-3 py-1.5 rounded font-medium transition"
+        >
           <Play className="w-3.5 h-3.5 fill-current" />
           <span>Preview & Code</span>
         </button>
@@ -39,10 +52,9 @@ export default function App() {
         </aside>
 
         <main className="flex-1 bg-slate-900 p-8 flex items-center justify-center overflow-auto">
-          <div className="w-[375px] h-[667px] bg-white rounded-[32px] border-[8px] border-slate-800 shadow-2xl overflow-hidden relative text-slate-900 flex flex-col">
-            <div className="p-4 bg-slate-100 flex-1 flex flex-col items-center justify-center border-2 border-dashed border-slate-300 m-2 rounded-xl">
-              <p className="text-xs text-slate-400">캔버스 준비 완료</p>
-            </div>
+          <div className="w-93.75 h-166.75 bg-white rounded-4xl border-8 border-slate-800 shadow-2xl overflow-hidden relative text-slate-900 flex flex-col p-1">
+            {/* AST Canvas Renderer */}
+            <CanvasRenderer node={rootNode} />
           </div>
         </main>
 
