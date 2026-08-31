@@ -5,6 +5,7 @@ import { ComponentNode, useEditorStore } from "./store/useEditorStore";
 import { CanvasRenderer } from "./components/CanvasRenderer";
 import { CanvasDroppable } from "./components/CanvasDroppable";
 import { ComponentPalette } from "./components/ComponentPalette";
+import { PropertyInspector } from "./components/PropertyInspector";
 
 export default function App() {
   const { rootNode, addNode } = useEditorStore();
@@ -146,14 +147,7 @@ export default function App() {
             <CanvasDroppable rootNode={rootNode} />
           </main>
 
-          <aside className="w-72 border-l border-slate-800 bg-slate-950 p-4">
-            <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-              Properties
-            </h3>
-            <div className="text-xs text-slate-500">
-              선택된 요소가 없습니다.
-            </div>
-          </aside>
+          <PropertyInspector />
         </div>
       </div>
     </DndContext>
