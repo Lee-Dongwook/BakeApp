@@ -52,6 +52,9 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [isRecordsLoading, setIsRecordsLoading] = useState(false);
   const [recordsError, setRecordsError] = useState<string | null>(null);
+  const [recordForm, setRecordForm] = useState<Record<string, string>>({});
+  const [isCreatingRecord, setIsCreatingRecord] = useState(false);
+  const [recordCreateError, setRecordCreateError] = useState<string | null>(null);
 
   const loadTables = async () => {
     const accessToken = useAuthStore.getState().accessToken;
@@ -97,6 +100,8 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
     if (!accessToken) return;
 
     setSelectedTable(tableName);
+    setRecordForm({});
+    setRecordCreateError(null);
     setIsRecordsLoading(true);
     setRecordsError(null);
     try {
@@ -124,6 +129,69 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
       );
     } finally {
       setIsRecordsLoading(false);
+    }
+  };
+
+  const handleCreateRecord = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!selectedTable) return;
+
+    const selectedTableDefinition = tables.find(
+      (table) => table.name === selectedTable,
+    );
+    if (
+      selectedTableDefinition?.columns.some(
+        (column) => column.isRequired && !recordForm[column.name]?.trim(),
+      )
+    ) {
+      setRecordCreateError("필수 컬럼을 모두 입력해 주세요.");
+      return;
+    }
+
+    const accessToken = useAuthStore.getState().accessToken;
+    if (!accessToken) return;
+
+    const payload = Object.fromEntries(
+      Object.entries(recordForm)
+        .filter(([, value]) => value !== "")
+        .map(([key, value]) => [key, value === "true" ? true : value === "false" ? false : value]),
+    );
+    if (Object.keys(payload).length === 0) {
+      setRecordCreateError("저장할 값을 입력해 주세요.");
+      return;
+    }
+
+    setIsCreatingRecord(true);
+    setRecordCreateError(null);
+    try {
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await fetch(
+        `${apiBaseUrl}/api/dynamic-data/${projectId}/${selectedTable}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
+          body: JSON.stringify(payload),
+        },
+      );
+      const data = (await response.json()) as ErrorResponse;
+      if (!response.ok) {
+        const message = Array.isArray(data.message)
+          ? data.message.join(", ")
+          : data.message;
+        throw new Error(message || "레코드를 저장하지 못했습니다.");
+      }
+      setRecordForm({});
+      await loadRecords(selectedTable);
+    } catch (error) {
+      setRecordCreateError(
+        error instanceof Error ? error.message : "레코드를 저장하지 못했습니다.",
+      );
+    } finally {
+      setIsCreatingRecord(false);
     }
   };
 
@@ -469,6 +537,62 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
           )}
           {selectedTable && (
             <div className="mt-4 border-t border-slate-200 pt-3">
+              {(() => {
+                const selectedTableDefinition = tables.find(
+                  (table) => table.name === selectedTable,
+                );
+                if (!selectedTableDefinition?.columns.length) return null;
+
+                return (
+                  <form onSubmit={handleCreateRecord} className="mb-4 rounded border border-slate-200 bg-white p-3">
+                    <h5 className="mb-2 text-xs font-bold text-slate-700">새 레코드 추가</h5>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {selectedTableDefinition.columns.map((column) => (
+                        <label key={column.name} className="text-[11px] font-medium text-slate-600">
+                          {column.name}{column.isRequired ? " *" : ""}
+                          {column.dataType === "boolean" ? (
+                            <select
+                              value={recordForm[column.name] ?? ""}
+                              onChange={(event) =>
+                                setRecordForm((current) => ({
+                                  ...current,
+                                  [column.name]: event.target.value,
+                                }))
+                              }
+                              className="mt-1 block w-full rounded border border-slate-300 px-2 py-1.5 text-xs"
+                            >
+                              <option value="">선택 안 함</option>
+                              <option value="true">예</option>
+                              <option value="false">아니오</option>
+                            </select>
+                          ) : (
+                            <input
+                              type={column.dataType === "numeric" ? "number" : "text"}
+                              value={recordForm[column.name] ?? ""}
+                              onChange={(event) =>
+                                setRecordForm((current) => ({
+                                  ...current,
+                                  [column.name]: event.target.value,
+                                }))
+                              }
+                              required={column.isRequired}
+                              className="mt-1 block w-full rounded border border-slate-300 px-2 py-1.5 text-xs"
+                            />
+                          )}
+                        </label>
+                      ))}
+                    </div>
+                    {recordCreateError && <p className="mt-2 text-xs text-rose-600">{recordCreateError}</p>}
+                    <button
+                      type="submit"
+                      disabled={isCreatingRecord}
+                      className="mt-3 rounded bg-amber-500 px-3 py-1.5 text-xs font-bold text-slate-950 hover:bg-amber-400 disabled:opacity-60"
+                    >
+                      {isCreatingRecord ? "저장 중…" : "레코드 저장"}
+                    </button>
+                  </form>
+                );
+              })()}
               <h5 className="mb-2 text-xs font-bold text-slate-700">
                 {selectedTable} 최근 레코드
               </h5>
