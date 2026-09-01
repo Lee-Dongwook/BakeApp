@@ -1,15 +1,21 @@
 import React from "react";
 import { useRuntimeStore } from "../store/useRuntimeStore";
-import { Code2, Database, Play, Edit3, RotateCcw } from "lucide-react";
+import { ChevronLeft, Code2, Database, Edit3, LogOut, Play, RotateCcw } from "lucide-react";
 
 interface HeaderProps {
   onOpenDbBuilder: () => void;
   onOpenCodePreview: () => void;
+  projectName: string;
+  onBackToProjects: () => void;
+  onSignOut: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenDbBuilder,
   onOpenCodePreview,
+  projectName,
+  onBackToProjects,
+  onSignOut,
 }) => {
   const mode = useRuntimeStore((state) => state.mode);
   const setMode = useRuntimeStore((state) => state.setMode);
@@ -19,10 +25,19 @@ export const Header: React.FC<HeaderProps> = ({
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-6 text-white">
       {/* 로고 영역 */}
       <div className="flex items-center gap-3">
-        <span className="text-2xl">🍞</span>
-        <h1 className="font-bold text-lg tracking-wide text-amber-400">
-          BakeApp Studio
-        </h1>
+        <button
+          type="button"
+          onClick={onBackToProjects}
+          className="flex items-center gap-1 text-xs text-slate-400 hover:text-white"
+          title="프로젝트 목록으로 돌아가기"
+        >
+          <ChevronLeft className="h-4 w-4" /> 프로젝트
+        </button>
+        <span className="text-xl">🍞</span>
+        <div>
+          <h1 className="font-bold text-sm tracking-wide text-amber-400">BakeApp Studio</h1>
+          <p className="max-w-40 truncate text-xs text-slate-400">{projectName}</p>
+        </div>
       </div>
 
       {/* 중앙: Edit / Live Preview 모드 스위처 */}
@@ -50,6 +65,15 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <Play className="h-3.5 w-3.5" />
           <span>Live Preview</span>
+        </button>
+        <button
+          type="button"
+          onClick={onSignOut}
+          className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+          title="로그아웃"
+          aria-label="로그아웃"
+        >
+          <LogOut className="h-4 w-4" />
         </button>
       </div>
 

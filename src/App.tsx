@@ -15,10 +15,20 @@ import { Header } from "./components/Header";
 import { PageManagerPanel } from "./components/PageManagerPanel";
 import { ApiQueryManagerPanel } from "./components/ApiQueryManagerPanel";
 import { Boxes, Database, Files } from "lucide-react";
+import { LoginScreen } from "./components/LoginScreen";
+import { ProjectDashboard } from "./components/ProjectDashboard";
+import { useAuthStore } from "./store/useAuthStore";
+import { useProjectStore } from "./store/useProjectStore";
 
 type SidebarTab = "COMPONENTS" | "PAGES" | "QUERIES";
 
 export default function App() {
+  const user = useAuthStore((state) => state.user);
+  const isInitializing = useAuthStore((state) => state.isInitializing);
+  const initialize = useAuthStore((state) => state.initialize);
+  const signOut = useAuthStore((state) => state.signOut);
+  const activeProject = useProjectStore((state) => state.activeProject);
+  const closeProject = useProjectStore((state) => state.closeProject);
   const activePage = usePageStore(selectActivePage);
   const addNode = usePageStore((state) => state.addNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
@@ -28,6 +38,10 @@ export default function App() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
+
+  useEffect(() => {
+    void initialize();
+  }, [initialize]);
 
   useEffect(() => {
     if (
@@ -135,6 +149,18 @@ export default function App() {
     }
   };
 
+  if (isInitializing) {
+    return <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">세션 확인 중…</div>;
+  }
+
+  if (!user) {
+    return <LoginScreen />;
+  }
+
+  if (!activeProject) {
+    return <ProjectDashboard />;
+  }
+
   if (!activePage) {
     return <div className="p-6">활성 페이지를 찾을 수 없습니다.</div>;
   }
@@ -145,6 +171,9 @@ export default function App() {
         <Header
           onOpenDbBuilder={() => setIsDbModalOpen(true)}
           onOpenCodePreview={() => setIsCodeModalOpen(true)}
+          projectName={activeProject.name}
+          onBackToProjects={closeProject}
+          onSignOut={signOut}
         />
 
         {/* Workspace */}
@@ -196,6 +225,7 @@ export default function App() {
       <DbSchemaBuilderModal
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
+        projectId={activeProject.id}
       />
     </DndContext>
   );
