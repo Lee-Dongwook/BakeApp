@@ -14,7 +14,7 @@ export default function App() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over && over.id === "canvas-drop-zone") {
+    if (over) {
       const type = active.data.current?.type as string;
       const label = active.data.current?.label as string;
 
@@ -98,7 +98,8 @@ export default function App() {
           return;
       }
 
-      addNode(rootNode.id, newNode);
+      const targetParentId = (over.id as string) || rootNode.id;
+      addNode(targetParentId, newNode);
     }
   };
 
