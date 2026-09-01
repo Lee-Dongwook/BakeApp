@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 
 interface ColumnInput {
@@ -11,6 +11,15 @@ type UserRole = "GUEST" | "MEMBER" | "ADMIN";
 
 interface ErrorResponse {
   message?: string | string[];
+}
+
+interface ProjectTable {
+  name: string;
+  columns: Array<{
+    name: string;
+    dataType: string;
+    isRequired: boolean;
+  }>;
 }
 
 interface DbSchemaBuilderModalProps {
@@ -36,6 +45,44 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   const [readRoles, setReadRoles] = useState<UserRole[]>(["MEMBER", "ADMIN"]);
   const [writeRoles, setWriteRoles] = useState<UserRole[]>(["ADMIN"]);
   const [isLoading, setIsLoading] = useState(false);
+  const [tables, setTables] = useState<ProjectTable[]>([]);
+  const [isTablesLoading, setIsTablesLoading] = useState(false);
+  const [tablesError, setTablesError] = useState<string | null>(null);
+
+  const loadTables = async () => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (!accessToken) return;
+
+    setIsTablesLoading(true);
+    setTablesError(null);
+    try {
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await fetch(
+        `${apiBaseUrl}/api/dynamic-schema/tables/${projectId}`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const data = (await response.json()) as ProjectTable[] | ErrorResponse;
+      if (!response.ok) {
+        const errorMessage = (data as ErrorResponse).message;
+        const message = Array.isArray(errorMessage)
+          ? errorMessage.join(", ")
+          : errorMessage;
+        throw new Error(message || "테이블 목록을 불러오지 못했습니다.");
+      }
+      setTables(data as ProjectTable[]);
+    } catch (error) {
+      setTablesError(
+        error instanceof Error ? error.message : "테이블 목록을 불러오지 못했습니다.",
+      );
+    } finally {
+      setIsTablesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isOpen) void loadTables();
+  }, [isOpen, projectId]);
 
   if (!isOpen) return null;
 
@@ -331,6 +378,43 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
             </button>
           </div>
         </form>
+
+        <section className="border-t border-slate-200 bg-slate-50 px-6 py-4">
+          <div className="mb-3 flex items-center justify-between">
+            <h4 className="text-sm font-bold text-slate-800">현재 테이블</h4>
+            <button
+              type="button"
+              onClick={() => void loadTables()}
+              disabled={isTablesLoading}
+              className="text-xs font-semibold text-amber-700 hover:text-amber-800 disabled:opacity-60"
+            >
+              {isTablesLoading ? "불러오는 중…" : "새로고침"}
+            </button>
+          </div>
+          {tablesError ? (
+            <p className="text-xs text-rose-600">{tablesError}</p>
+          ) : tables.length === 0 ? (
+            <p className="text-xs text-slate-500">아직 생성된 테이블이 없습니다.</p>
+          ) : (
+            <ul className="max-h-32 space-y-2 overflow-y-auto">
+              {tables.map((table) => (
+                <li key={table.name} className="rounded border border-slate-200 bg-white px-3 py-2">
+                  <p className="text-xs font-bold text-slate-800">{table.name}</p>
+                  <p className="mt-1 text-[11px] text-slate-500">
+                    {table.columns.length === 0
+                      ? "사용자 정의 컬럼 없음"
+                      : table.columns
+                          .map(
+                            (column) =>
+                              `${column.name}: ${column.dataType}${column.isRequired ? " (필수)" : ""}`,
+                          )
+                          .join(", ")}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
       </div>
     </div>
   );
