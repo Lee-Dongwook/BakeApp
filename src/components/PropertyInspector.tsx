@@ -210,6 +210,43 @@ export const PropertyInspector: React.FC = () => {
                 </div>
               )}
 
+              {selectedNode.type === "DataList" && (
+                <div className="space-y-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-400">
+                      테이블 이름
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedNode.props?.tableName || ""}
+                      placeholder="예: products"
+                      onChange={(e) =>
+                        updateNodeProps(activePage.id, selectedNode.id, {
+                          tableName: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium text-slate-400">
+                      목록에 표시할 컬럼
+                    </label>
+                    <input
+                      type="text"
+                      value={selectedNode.props?.displayField || ""}
+                      placeholder="예: title"
+                      onChange={(e) =>
+                        updateNodeProps(activePage.id, selectedNode.id, {
+                          displayField: e.target.value,
+                        })
+                      }
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                </div>
+              )}
+
               {/* Styles Form */}
               <div className="space-y-4">
                 <div className="flex items-center space-x-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">

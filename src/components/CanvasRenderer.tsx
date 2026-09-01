@@ -1,9 +1,11 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
 import { type ComponentNode, useCanvasStore } from "../store/useCanvasStore";
 import { usePageStore } from "../store/usePageStore";
 import { useRuntimeStore } from "../store/useRuntimeStore";
 import { useQueryStore } from "../store/useQueryStore";
+import { useAuthStore } from "../store/useAuthStore";
+import { useProjectStore } from "../store/useProjectStore";
 
 interface CanvasRendererProps {
   node: ComponentNode | string;
@@ -11,6 +13,93 @@ interface CanvasRendererProps {
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
+interface DataListRendererProps {
+  node: ComponentNode;
+  mode: "EDIT" | "PREVIEW";
+  className: string;
+  onClick: (event: React.MouseEvent) => void;
+}
+
+const DataListRenderer: React.FC<DataListRendererProps> = ({
+  node,
+  mode,
+  className,
+  onClick,
+}) => {
+  const projectId = useProjectStore((state) => state.activeProject?.id);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const tableName = String(node.props?.tableName || "").trim();
+  const displayField = String(node.props?.displayField || "").trim();
+
+  useEffect(() => {
+    if (mode !== "PREVIEW" || !projectId || !accessToken || !tableName) return;
+
+    let isCurrent = true;
+    setIsLoading(true);
+    setError(null);
+    fetch(`${API_BASE_URL}/api/dynamic-data/${projectId}/${tableName}?limit=20`, {
+      headers: { Authorization: `Bearer ${accessToken}` },
+    })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("데이터를 불러오지 못했습니다.");
+        return response.json() as Promise<{ data: Record<string, unknown>[] }>;
+      })
+      .then((data) => {
+        if (isCurrent) setRecords(data.data);
+      })
+      .catch((fetchError) => {
+        if (isCurrent) {
+          setError(
+            fetchError instanceof Error ? fetchError.message : "데이터를 불러오지 못했습니다.",
+          );
+        }
+      })
+      .finally(() => {
+        if (isCurrent) setIsLoading(false);
+      });
+
+    return () => {
+      isCurrent = false;
+    };
+  }, [accessToken, mode, projectId, tableName]);
+
+  if (mode === "EDIT") {
+    return (
+      <div
+        onClick={onClick}
+        style={node.style as React.CSSProperties}
+        className={`cursor-pointer text-xs text-slate-500 ${className}`}
+      >
+        <p className="font-semibold text-slate-700">Data List</p>
+        <p className="mt-1">{tableName ? `${tableName} 테이블` : "속성 패널에서 테이블을 선택하세요."}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div onClick={onClick} style={node.style as React.CSSProperties} className={className}>
+      {isLoading ? (
+        <p className="text-sm text-slate-500">데이터를 불러오는 중…</p>
+      ) : error ? (
+        <p className="text-sm text-rose-500">{error}</p>
+      ) : records.length === 0 ? (
+        <p className="text-sm text-slate-500">표시할 데이터가 없습니다.</p>
+      ) : (
+        <ul className="space-y-2">
+          {records.map((record, index) => (
+            <li key={String(record.id ?? index)} className="rounded bg-white px-3 py-2 text-sm shadow-sm">
+              {String(record[displayField] ?? record.id ?? "")}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+};
 
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
   const { mode, formState, setFormField, workflowResults, setWorkflowResult } =
@@ -232,6 +321,16 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
               ? "cursor-pointer"
               : "focus:outline-none focus:ring-2 focus:ring-amber-500"
           } ${selectionStyle}`}
+        />
+      );
+
+    case "DataList":
+      return (
+        <DataListRenderer
+          node={node}
+          mode={mode}
+          onClick={handleClick}
+          className={`transition-all ${selectionStyle}`}
         />
       );
 

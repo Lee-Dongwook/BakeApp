@@ -159,6 +159,21 @@ export default function App() {
           };
           break;
 
+        case "DataList":
+          newNode = {
+            id: newId,
+            type: "DataList",
+            name: `${label} ${newId.slice(-4)}`,
+            props: { tableName: "", displayField: "" },
+            style: {
+              padding: 12,
+              backgroundColor: "#f8fafc",
+              borderRadius: 8,
+              gap: 8,
+            },
+          };
+          break;
+
         default:
           return;
       }

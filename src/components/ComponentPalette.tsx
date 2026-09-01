@@ -1,6 +1,6 @@
 import React from "react";
 import { useDraggable } from "@dnd-kit/core";
-import { Box, Type, MousePointerClick, FormInput } from "lucide-react";
+import { Box, Type, MousePointerClick, FormInput, List } from "lucide-react";
 
 interface PaletteItemProps {
   type: string;
@@ -42,6 +42,11 @@ export const ComponentPalette: React.FC = () => {
       type: "TextInput",
       label: "Input",
       icon: <FormInput className="w-4 h-4" />,
+    },
+    {
+      type: "DataList",
+      label: "Data List",
+      icon: <List className="w-4 h-4" />,
     },
   ];
 
