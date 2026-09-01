@@ -1,5 +1,7 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "src/config/database.service";
+import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
+import { SchemaRegistryService } from "../schema/schema-registry.service";
 
 export interface ColumnDefinition {
   name: string;
@@ -9,7 +11,11 @@ export interface ColumnDefinition {
 
 @Injectable()
 export class DynamicSchemaService {
-  constructor(private readonly dbService: DatabaseService) {}
+  constructor(
+    private readonly dbService: DatabaseService,
+    private readonly schemaRegistry: SchemaRegistryService,
+    private readonly dynamicSwagger: DynamicSwaggerService,
+  ) {}
 
   private mapToPgType(type: string): string {
     switch (type) {
@@ -80,6 +86,10 @@ export class DynamicSchemaService {
 
       await this.dbService.query(enableRlsSql);
       await this.dbService.query(createPolicySql);
+
+      await this.schemaRegistry.saveSchema(projectId, dto);
+
+      await this.dynamicSwagger.refreshSwaggerDoc();
 
       return {
         success: true,
