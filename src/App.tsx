@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { LayoutGrid, Database, Play } from "lucide-react";
 import { ComponentNode, useEditorStore } from "./store/useEditorStore";
 import { CanvasDroppable } from "./components/CanvasDroppable";
 import { ComponentPalette } from "./components/ComponentPalette";
 import { PropertyInspector } from "./components/PropertyInspector";
 import { CodePreviewModal } from "./components/CodePreviewModal";
+import { DbSchemaBuilderModal } from "./components/DbSchemaBuilderModal";
+import { Header } from "./components/Header";
 
 export default function App() {
   const { rootNode, addNode } = useEditorStore();
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
+  const [isDbModalOpen, setIsDbModalOpen] = useState(false);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -106,41 +108,10 @@ export default function App() {
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className="flex h-screen w-screen flex-col bg-slate-900 text-white">
-        {/* Top Header */}
-        <header className="flex h-14 items-center justify-between border-b border-slate-800 px-4 bg-slate-950">
-          <div className="flex items-center space-x-2">
-            <span className="text-xl font-bold text-amber-500">🍞 BakeApp</span>
-            <span className="text-xs bg-slate-800 text-slate-400 px-2 py-0.5 rounded">
-              v1.0 Editor
-            </span>
-          </div>
-
-          <div className="flex items-center bg-slate-800 p-1 rounded-lg space-x-1">
-            <button
-              type="button"
-              className="flex items-center space-x-1 px-3 py-1 bg-slate-700 text-xs rounded font-medium"
-            >
-              <LayoutGrid className="w-3.5 h-3.5" />
-              <span>UI Builder</span>
-            </button>
-            <button
-              type="button"
-              className="flex items-center space-x-1 px-3 py-1 hover:bg-slate-700 text-xs rounded font-medium text-slate-400"
-            >
-              <Database className="w-3.5 h-3.5" />
-              <span>DB Builder</span>
-            </button>
-          </div>
-
-          <button
-            type="button"
-            className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-white px-3 py-1.5 rounded font-medium transition"
-            onClick={() => setIsCodeModalOpen(true)}
-          >
-            <Play className="w-3.5 h-3.5 fill-current" />
-            <span>Preview & Code</span>
-          </button>
-        </header>
+        <Header
+          onOpenDbBuilder={() => setIsDbModalOpen(true)}
+          onOpenCodePreview={() => setIsCodeModalOpen(true)}
+        />
 
         {/* Workspace */}
         <div className="flex flex-1 overflow-hidden">
@@ -156,6 +127,10 @@ export default function App() {
       <CodePreviewModal
         isOpen={isCodeModalOpen}
         onClose={() => setIsCodeModalOpen(false)}
+      />
+      <DbSchemaBuilderModal
+        isOpen={isDbModalOpen}
+        onClose={() => setIsDbModalOpen(false)}
       />
     </DndContext>
   );

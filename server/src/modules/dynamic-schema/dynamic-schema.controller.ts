@@ -4,11 +4,13 @@ import {
   DynamicSchemaService,
   ColumnDefinition,
 } from "./dynamic-schema.service";
+import { TablePolicyDefinition } from "../auth/interfaces/rbac-policy.interface";
 
 class CreateTableDto {
   projectId: string;
   tableName: string;
   columns: ColumnDefinition[];
+  rbacPolicy?: Omit<TablePolicyDefinition, "tableName">;
 }
 
 class AddColumnDto {
@@ -33,6 +35,7 @@ export class DynamicSchemaController {
       dto.projectId,
       dto.tableName,
       dto.columns,
+      dto.rbacPolicy,
     );
   }
 

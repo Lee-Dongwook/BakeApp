@@ -2,6 +2,8 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
+import { DynamicRlsService } from "../auth/dynamic-rls.service";
+import { TablePolicyDefinition } from "../auth/interfaces/rbac-policy.interface";
 
 export interface ColumnDefinition {
   name: string;
@@ -15,6 +17,7 @@ export class DynamicSchemaService {
     private readonly dbService: DatabaseService,
     private readonly schemaRegistry: SchemaRegistryService,
     private readonly dynamicSwagger: DynamicSwaggerService,
+    private readonly dynamicRls: DynamicRlsService,
   ) {}
 
   private mapToPgType(type: string): string {
@@ -49,6 +52,7 @@ export class DynamicSchemaService {
     projectId: string,
     rawTableName: string,
     columns: ColumnDefinition[],
+    rbacPolicy?: Omit<TablePolicyDefinition, "tableName">,
   ) {
     const cleanProjectId = projectId.replace(/-/g, "_");
     const cleanTableName = this.sanitizeIdentifier(rawTableName);
@@ -85,8 +89,20 @@ export class DynamicSchemaService {
       await this.dbService.runInTransaction(async (client) => {
         await client.query(sql);
         await client.query(enableRlsSql);
-        await client.query(createPolicySql);
+        if (!rbacPolicy) {
+          await client.query(createPolicySql);
+        }
       });
+
+      if (rbacPolicy) {
+        await this.dynamicRls.applyTableRlsPolicy(projectId, {
+          tableName: cleanTableName,
+          readRoles: [...rbacPolicy.readRoles],
+          writeRoles: [...rbacPolicy.writeRoles],
+          deleteRoles: [...rbacPolicy.deleteRoles],
+          ownerOnly: rbacPolicy.ownerOnly,
+        });
+      }
 
       this.schemaRegistry.saveSchema(projectId, {
         tableName: cleanTableName,

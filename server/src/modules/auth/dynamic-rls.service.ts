@@ -14,11 +14,10 @@ export class DynamicRlsService {
   private buildRoleCondition(roles: UserRole[]): string {
     if (!roles || roles.length === 0) return "false";
 
-    if (!roles.includes("ADMIN")) {
-      roles.push("ADMIN");
-    }
-
-    const rolesFormatted = roles.map((r) => `'${r}'`).join(", ");
+    const rolesWithAdmin = roles.includes("ADMIN")
+      ? roles
+      : [...roles, "ADMIN" as const];
+    const rolesFormatted = rolesWithAdmin.map((r) => `'${r}'`).join(", ");
     return `current_setting('app.current_user_role', true) IN (${rolesFormatted})`;
   }
 
@@ -29,8 +28,11 @@ export class DynamicRlsService {
     const enableRlsSql = `ALTER TABLE "${fullTableName}" ENABLE ROW LEVEL SECURITY;`;
 
     const dropOldPoliciesSql = `
+        DROP POLICY IF EXISTS "Tenant Isolation Policy" ON "${fullTableName}";
         DROP POLICY IF EXISTS "${fullTableName}_read_policy" ON "${fullTableName}";
         DROP POLICY IF EXISTS "${fullTableName}_write_policy" ON "${fullTableName}";
+        DROP POLICY IF EXISTS "${fullTableName}_insert_policy" ON "${fullTableName}";
+        DROP POLICY IF EXISTS "${fullTableName}_update_policy" ON "${fullTableName}";
         DROP POLICY IF EXISTS "${fullTableName}_delete_policy" ON "${fullTableName}";
     `;
 
@@ -47,10 +49,17 @@ export class DynamicRlsService {
     `;
 
     const writeRolesCondition = this.buildRoleCondition(policy.writeRoles);
-    const createWritePolicySql = `
-      CREATE POLICY "${fullTableName}_write_policy" 
+    const createInsertPolicySql = `
+      CREATE POLICY "${fullTableName}_insert_policy"
       ON "${fullTableName}" 
-      FOR ALL 
+      FOR INSERT
+      WITH CHECK (${writeRolesCondition});
+    `;
+
+    const createUpdatePolicySql = `
+      CREATE POLICY "${fullTableName}_update_policy"
+      ON "${fullTableName}"
+      FOR UPDATE
       USING (${writeRolesCondition})
       WITH CHECK (${writeRolesCondition});
     `;
@@ -67,7 +76,8 @@ export class DynamicRlsService {
       await this.dbService.query(enableRlsSql);
       await this.dbService.query(dropOldPoliciesSql);
       await this.dbService.query(createReadPolicySql);
-      await this.dbService.query(createWritePolicySql);
+      await this.dbService.query(createInsertPolicySql);
+      await this.dbService.query(createUpdatePolicySql);
       await this.dbService.query(createDeletePolicySql);
 
       this.logger.log(
