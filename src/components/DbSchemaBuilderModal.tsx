@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useAuthStore } from "../store/useAuthStore";
 
 interface ColumnInput {
   name: string;
@@ -69,13 +70,20 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
     setIsLoading(true);
 
     try {
+      const accessToken = useAuthStore.getState().accessToken;
+      if (!accessToken) {
+        throw new Error("로그인이 필요합니다.");
+      }
       const apiBaseUrl =
         import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
       const response = await fetch(
         `${apiBaseUrl}/api/dynamic-schema/table`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${accessToken}`,
+          },
           body: JSON.stringify({
             projectId,
             tableName,

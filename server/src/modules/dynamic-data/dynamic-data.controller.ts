@@ -7,14 +7,29 @@ import {
   Param,
   Body,
   Query,
+  Req,
+  UseGuards,
 } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiParam, ApiQuery } from "@nestjs/swagger";
+import {
+  ApiBearerAuth,
+  ApiTags,
+  ApiOperation,
+  ApiParam,
+  ApiQuery,
+} from "@nestjs/swagger";
 import { DynamicDataService } from "./dynamic-data.service";
+import { AuthGuard } from "../auth/auth.guard";
+import { ProjectService } from "../project/project.service";
 
 @ApiTags("Dynamic Data (동적 CRUD)")
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller("api/dynamic-data")
 export class DynamicDataController {
-  constructor(private readonly dataService: DynamicDataService) {}
+  constructor(
+    private readonly dataService: DynamicDataService,
+    private readonly projectService: ProjectService,
+  ) {}
 
   @Post(":projectId/:tableName")
   @ApiOperation({ summary: "데이터 생성 (INSERT)" })
@@ -24,7 +39,9 @@ export class DynamicDataController {
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
     @Body() body: Record<string, any>,
+    @Req() req: any,
   ) {
+    await this.projectService.ensureCanEdit(projectId, req.user.id);
     return this.dataService.create(projectId, tableName, body);
   }
 
@@ -37,7 +54,9 @@ export class DynamicDataController {
     @Param("tableName") tableName: string,
     @Query("page") page?: string,
     @Query("limit") limit?: string,
+    @Req() req?: any,
   ) {
+    await this.projectService.findOneAccessibleByUser(projectId, req.user.id);
     return this.dataService.findAll(
       projectId,
       tableName,
@@ -53,7 +72,9 @@ export class DynamicDataController {
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
     @Param("id") id: string,
+    @Req() req: any,
   ) {
+    await this.projectService.findOneAccessibleByUser(projectId, req.user.id);
     return this.dataService.findOne(projectId, tableName, id);
   }
 
@@ -64,7 +85,9 @@ export class DynamicDataController {
     @Param("tableName") tableName: string,
     @Param("id") id: string,
     @Body() body: Record<string, any>,
+    @Req() req: any,
   ) {
+    await this.projectService.ensureCanEdit(projectId, req.user.id);
     return this.dataService.update(projectId, tableName, id, body);
   }
 
@@ -73,7 +96,9 @@ export class DynamicDataController {
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,
     @Param("id") id: string,
+    @Req() req: any,
   ) {
+    await this.projectService.ensureCanEdit(projectId, req.user.id);
     return this.dataService.remove(projectId, tableName, id);
   }
 }
