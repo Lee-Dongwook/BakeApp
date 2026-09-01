@@ -57,6 +57,16 @@ export default function App() {
   }, [activeProject, loadDocument]);
 
   useEffect(() => {
+    if (!activeProject || !isDirty || isSaving || saveError) return;
+
+    const timer = window.setTimeout(() => {
+      void saveDocument(activeProject.id);
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [activeProject, isDirty, isSaving, saveDocument, saveError]);
+
+  useEffect(() => {
     if (
       activePage &&
       selectedNodeId &&
