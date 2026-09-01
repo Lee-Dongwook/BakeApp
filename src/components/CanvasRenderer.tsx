@@ -1,26 +1,32 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { ComponentNode, useEditorStore } from "../store/useEditorStore";
+import {
+  type ComponentNode,
+  useCanvasStore,
+} from "../store/useCanvasStore";
+import { useRuntimeStore } from "../store/useRuntimeStore";
 
 interface CanvasRendererProps {
   node: ComponentNode | string;
 }
 
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
-  const {
-    mode,
-    selectedNodeId,
-    setSelectedNodeId,
-    formState,
-    setFormField,
-    workflowResults,
-    setWorkflowResult,
-  } = useEditorStore();
+  const mode = useRuntimeStore((state) => state.mode);
+  const formState = useRuntimeStore((state) => state.formState);
+  const setFormField = useRuntimeStore((state) => state.setFormField);
+  const workflowResults = useRuntimeStore((state) => state.workflowResults);
+  const setWorkflowResult = useRuntimeStore(
+    (state) => state.setWorkflowResult,
+  );
+  const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
+  const setSelectedNodeId = useCanvasStore(
+    (state) => state.setSelectedNodeId,
+  );
 
   const resolveDynamicValue = (val: string): string => {
     if (typeof val !== "string") return val;
 
-    return val.replace(/\{\P\s*([\w\.]+)\s*\}\}/g, (_, path) => {
+    return val.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) => {
       const keys = path.split(".");
       if (keys[0] === "form") {
         return formState[keys[1]] ?? "";

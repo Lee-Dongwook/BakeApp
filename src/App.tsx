@@ -1,6 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
-import { ComponentNode, useEditorStore } from "./store/useEditorStore";
+import {
+  findNodeById,
+  type ComponentNode,
+  useCanvasStore,
+} from "./store/useCanvasStore";
+import { selectActivePage, usePageStore } from "./store/usePageStore";
 import { CanvasDroppable } from "./components/CanvasDroppable";
 import { ComponentPalette } from "./components/ComponentPalette";
 import { PropertyInspector } from "./components/PropertyInspector";
@@ -9,14 +14,29 @@ import { DbSchemaBuilderModal } from "./components/DbSchemaBuilderModal";
 import { Header } from "./components/Header";
 
 export default function App() {
-  const { rootNode, addNode } = useEditorStore();
+  const activePage = usePageStore(selectActivePage);
+  const addNode = usePageStore((state) => state.addNode);
+  const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
+  const setSelectedNodeId = useCanvasStore(
+    (state) => state.setSelectedNodeId,
+  );
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (
+      activePage &&
+      selectedNodeId &&
+      !findNodeById(activePage.rootNode, selectedNodeId)
+    ) {
+      setSelectedNodeId(activePage.rootNode.id);
+    }
+  }, [activePage, selectedNodeId, setSelectedNodeId]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (over) {
+    if (over && activePage) {
       const type = active.data.current?.type as string;
       const label = active.data.current?.label as string;
 
@@ -100,10 +120,18 @@ export default function App() {
           return;
       }
 
-      const targetParentId = (over.id as string) || rootNode.id;
-      addNode(targetParentId, newNode);
+      const targetParentId =
+        over.id === "canvas-drop-zone"
+          ? activePage.rootNode.id
+          : String(over.id);
+      addNode(activePage.id, targetParentId, newNode);
+      setSelectedNodeId(newNode.id);
     }
   };
+
+  if (!activePage) {
+    return <div className="p-6">활성 페이지를 찾을 수 없습니다.</div>;
+  }
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
@@ -118,7 +146,7 @@ export default function App() {
           <ComponentPalette />
 
           <main className="flex-1 bg-slate-900 p-8 flex items-center justify-center overflow-auto">
-            <CanvasDroppable rootNode={rootNode} />
+            <CanvasDroppable rootNode={activePage.rootNode} />
           </main>
 
           <PropertyInspector />

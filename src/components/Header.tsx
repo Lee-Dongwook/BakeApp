@@ -1,5 +1,5 @@
 import React from "react";
-import { useEditorStore } from "../store/useEditorStore";
+import { useRuntimeStore } from "../store/useRuntimeStore";
 import { Code2, Database, Play, Edit3, RotateCcw } from "lucide-react";
 
 interface HeaderProps {
@@ -11,7 +11,9 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDbBuilder,
   onOpenCodePreview,
 }) => {
-  const { mode, setMode, resetFormState } = useEditorStore();
+  const mode = useRuntimeStore((state) => state.mode);
+  const setMode = useRuntimeStore((state) => state.setMode);
+  const resetFormState = useRuntimeStore((state) => state.resetFormState);
 
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-6 text-white">

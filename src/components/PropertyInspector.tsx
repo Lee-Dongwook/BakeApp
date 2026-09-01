@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-import { useEditorStore, ComponentNode } from "../store/useEditorStore";
+import { findNodeById, useCanvasStore } from "../store/useCanvasStore";
+import { selectActivePage, usePageStore } from "../store/usePageStore";
 import {
   Plus,
   Sliders,
@@ -18,35 +19,22 @@ interface WorkflowAction {
   nextActionId?: string;
 }
 
-const findNodeById = (
-  node: ComponentNode,
-  id: string,
-): ComponentNode | null => {
-  if (node.id === id) return node;
-  if (node.children) {
-    for (const child of node.children) {
-      if (typeof child !== "string") {
-        const found = findNodeById(child, id);
-        if (found) return found;
-      }
-    }
-  }
-  return null;
-};
-
 export const PropertyInspector: React.FC = () => {
-  const {
-    rootNode,
-    selectedNodeId,
-    updateNodeStyle,
-    updateNodeProps,
-    updateNodeTextContent,
-    deleteNode,
-  } = useEditorStore();
+  const activePage = usePageStore(selectActivePage);
+  const updateNodeStyle = usePageStore((state) => state.updateNodeStyle);
+  const updateNodeProps = usePageStore((state) => state.updateNodeProps);
+  const updateNodeTextContent = usePageStore(
+    (state) => state.updateNodeTextContent,
+  );
+  const deleteNode = usePageStore((state) => state.deleteNode);
+  const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
+  const setSelectedNodeId = useCanvasStore(
+    (state) => state.setSelectedNodeId,
+  );
 
   const [activeTab, setActiveTab] = useState<"STYLE" | "WORKFLOW">("STYLE");
 
-  if (!selectedNodeId) {
+  if (!activePage || !selectedNodeId) {
     return (
       <aside className="w-72 border-l border-slate-800 bg-slate-950 p-4">
         <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
@@ -59,7 +47,7 @@ export const PropertyInspector: React.FC = () => {
     );
   }
 
-  const selectedNode = findNodeById(rootNode, selectedNodeId);
+  const selectedNode = findNodeById(activePage.rootNode, selectedNodeId);
 
   if (!selectedNode) {
     return (
@@ -85,7 +73,9 @@ export const PropertyInspector: React.FC = () => {
       nextActionId: updatedActions[index + 1]?.id,
     }));
 
-    updateNodeProps(selectedNode.id, { onClickWorkflow: linkedActions });
+    updateNodeProps(activePage.id, selectedNode.id, {
+      onClickWorkflow: linkedActions,
+    });
   };
 
   const handleAddAction = (actionType: WorkflowActionType) => {
@@ -134,10 +124,13 @@ export const PropertyInspector: React.FC = () => {
               {selectedNode.name}
             </h2>
           </div>
-          {selectedNode.id !== "root-container" && (
+          {selectedNode.id !== activePage.rootNode.id && (
             <button
               type="button"
-              onClick={() => deleteNode(selectedNode.id)}
+              onClick={() => {
+                deleteNode(activePage.id, selectedNode.id);
+                setSelectedNodeId(null);
+              }}
               className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition"
               title="노드 삭제"
             >
@@ -187,7 +180,11 @@ export const PropertyInspector: React.FC = () => {
                     type="text"
                     value={textValue}
                     onChange={(e) =>
-                      updateNodeTextContent(selectedNode.id, e.target.value)
+                      updateNodeTextContent(
+                        activePage.id,
+                        selectedNode.id,
+                        e.target.value,
+                      )
                     }
                     className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
                   />
@@ -204,7 +201,7 @@ export const PropertyInspector: React.FC = () => {
                     type="text"
                     value={selectedNode.props?.placeholder || ""}
                     onChange={(e) =>
-                      updateNodeProps(selectedNode.id, {
+                      updateNodeProps(activePage.id, selectedNode.id, {
                         placeholder: e.target.value,
                       })
                     }
@@ -229,7 +226,7 @@ export const PropertyInspector: React.FC = () => {
                       type="color"
                       value={selectedNode.style?.backgroundColor || "#ffffff"}
                       onChange={(e) =>
-                        updateNodeStyle(selectedNode.id, {
+                        updateNodeStyle(activePage.id, selectedNode.id, {
                           backgroundColor: e.target.value,
                         })
                       }
@@ -239,7 +236,7 @@ export const PropertyInspector: React.FC = () => {
                       type="text"
                       value={selectedNode.style?.backgroundColor || ""}
                       onChange={(e) =>
-                        updateNodeStyle(selectedNode.id, {
+                        updateNodeStyle(activePage.id, selectedNode.id, {
                           backgroundColor: e.target.value,
                         })
                       }
@@ -259,7 +256,7 @@ export const PropertyInspector: React.FC = () => {
                         type="color"
                         value={selectedNode.style?.color || "#000000"}
                         onChange={(e) =>
-                          updateNodeStyle(selectedNode.id, {
+                          updateNodeStyle(activePage.id, selectedNode.id, {
                             color: e.target.value,
                           })
                         }
@@ -269,7 +266,7 @@ export const PropertyInspector: React.FC = () => {
                         type="text"
                         value={selectedNode.style?.color || ""}
                         onChange={(e) =>
-                          updateNodeStyle(selectedNode.id, {
+                          updateNodeStyle(activePage.id, selectedNode.id, {
                             color: e.target.value,
                           })
                         }
@@ -289,7 +286,7 @@ export const PropertyInspector: React.FC = () => {
                       type="number"
                       value={selectedNode.style?.fontSize || 14}
                       onChange={(e) =>
-                        updateNodeStyle(selectedNode.id, {
+                        updateNodeStyle(activePage.id, selectedNode.id, {
                           fontSize: Number(e.target.value),
                         })
                       }
@@ -307,7 +304,7 @@ export const PropertyInspector: React.FC = () => {
                     type="number"
                     value={selectedNode.style?.padding || 0}
                     onChange={(e) =>
-                      updateNodeStyle(selectedNode.id, {
+                      updateNodeStyle(activePage.id, selectedNode.id, {
                         padding: Number(e.target.value),
                       })
                     }
@@ -324,7 +321,7 @@ export const PropertyInspector: React.FC = () => {
                     type="number"
                     value={selectedNode.style?.borderRadius || 0}
                     onChange={(e) =>
-                      updateNodeStyle(selectedNode.id, {
+                      updateNodeStyle(activePage.id, selectedNode.id, {
                         borderRadius: Number(e.target.value),
                       })
                     }

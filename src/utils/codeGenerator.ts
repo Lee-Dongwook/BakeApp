@@ -1,4 +1,4 @@
-import { ComponentNode } from "../store/useEditorStore";
+import type { ComponentNode } from "../store/useCanvasStore";
 
 const styleToString = (style?: Record<string, any>): string => {
   if (!style || Object.keys(style).length === 0) return "";

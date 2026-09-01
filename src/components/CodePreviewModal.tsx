@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
-import { useEditorStore } from "../store/useEditorStore";
+import { selectActivePage, usePageStore } from "../store/usePageStore";
 import { generateReactCode } from "../utils/codeGenerator";
 import {
   X,
@@ -21,14 +21,14 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
   isOpen,
   onClose,
 }) => {
-  const { rootNode } = useEditorStore();
+  const activePage = usePageStore(selectActivePage);
   const [target, setTarget] = useState<"rn" | "react">("rn");
   const [code, setCode] = useState<string>("코드 생성 중...");
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !activePage) return;
 
     const fetchCompiledCode = async () => {
       setLoading(true);
@@ -37,8 +37,8 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
         const response = await axios.post(
           `http://localhost:3000/api/generator/compile?target=${target}`,
           {
-            pageName: "home",
-            ast: rootNode,
+            pageName: activePage.name,
+            ast: activePage.rootNode,
           },
         );
         setCode(response.data.code);
@@ -47,7 +47,7 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
           "백엔드 컴파일러 연결 실패 - 클라이언트 로컬 변환기로 전환합니다:",
           error,
         );
-        const fallbackCode = generateReactCode(rootNode);
+        const fallbackCode = generateReactCode(activePage.rootNode);
         setCode(fallbackCode);
       } finally {
         setLoading(false);
@@ -55,7 +55,7 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
     };
 
     fetchCompiledCode();
-  }, [isOpen, target, rootNode]);
+  }, [isOpen, target, activePage]);
 
   if (!isOpen) return null;
 
