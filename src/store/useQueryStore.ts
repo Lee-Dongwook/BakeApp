@@ -16,6 +16,8 @@ interface QueryState {
   queries: ApiQuery[];
   queryResults: Record<string, { data: any; loading: boolean; error: any }>;
 
+  replaceQueries: (queries: ApiQuery[]) => void;
+  resetQueries: () => void;
   addQuery: (query: ApiQuery) => void;
   updateQuery: (id: string, query: Partial<ApiQuery>) => void;
   deleteQuery: (id: string) => void;
@@ -23,17 +25,21 @@ interface QueryState {
   runQuery: (queryId: string) => Promise<any>;
 }
 
+const initialQueries: ApiQuery[] = [
+  {
+    id: "query-get-users",
+    name: "getUsers",
+    url: "https://jsonplaceholder.typicode.com/users",
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  },
+];
+
 export const useQueryStore = create<QueryState>((set, get) => ({
-  queries: [
-    {
-      id: "query-get-users",
-      name: "getUsers",
-      url: "https://jsonplaceholder.typicode.com/users",
-      method: "GET" as ApiQuery["method"],
-      headers: { "Content-Type": "application/json" },
-    },
-  ],
+  queries: structuredClone(initialQueries),
   queryResults: {},
+  replaceQueries: (queries) => set({ queries, queryResults: {} }),
+  resetQueries: () => set({ queries: structuredClone(initialQueries), queryResults: {} }),
   addQuery: (query) => set((state) => ({ queries: [...state.queries, query] })),
   updateQuery: (id, updated) =>
     set((state) => ({

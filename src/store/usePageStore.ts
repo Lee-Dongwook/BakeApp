@@ -18,6 +18,8 @@ interface PageState {
   activePageId: string;
   pageParams: Record<string, any>;
 
+  replacePages: (pages: Page[]) => void;
+  resetPages: () => void;
   setActivePage: (pageId: string, params?: Record<string, any>) => void;
   addPage: (name: string, path: string) => void;
   deletePage: (pageId: string) => void;
@@ -75,6 +77,20 @@ export const usePageStore = create<PageState>((set) => ({
   pages: initialPages,
   activePageId: "page-home",
   pageParams: {},
+
+  replacePages: (pages) =>
+    set({
+      pages,
+      activePageId: pages[0]?.id ?? "",
+      pageParams: {},
+    }),
+
+  resetPages: () =>
+    set({
+      pages: structuredClone(initialPages),
+      activePageId: "page-home",
+      pageParams: {},
+    }),
 
   setActivePage: (pageId, params = {}) =>
     set({ activePageId: pageId, pageParams: params }),

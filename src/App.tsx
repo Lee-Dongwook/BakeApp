@@ -31,6 +31,8 @@ export default function App() {
   const activeProject = useProjectStore((state) => state.activeProject);
   const closeProject = useProjectStore((state) => state.closeProject);
   const saveDocument = useProjectDocumentStore((state) => state.save);
+  const loadDocument = useProjectDocumentStore((state) => state.load);
+  const isDocumentLoading = useProjectDocumentStore((state) => state.isLoading);
   const isSaving = useProjectDocumentStore((state) => state.isSaving);
   const saveError = useProjectDocumentStore((state) => state.error);
   const activePage = usePageStore(selectActivePage);
@@ -46,6 +48,12 @@ export default function App() {
   useEffect(() => {
     void initialize();
   }, [initialize]);
+
+  useEffect(() => {
+    if (activeProject) {
+      void loadDocument(activeProject.id);
+    }
+  }, [activeProject, loadDocument]);
 
   useEffect(() => {
     if (
@@ -163,6 +171,10 @@ export default function App() {
 
   if (!activeProject) {
     return <ProjectDashboard />;
+  }
+
+  if (isDocumentLoading) {
+    return <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">프로젝트를 불러오는 중…</div>;
   }
 
   if (!activePage) {
