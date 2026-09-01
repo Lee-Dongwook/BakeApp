@@ -1,14 +1,15 @@
-import React from "react";
+import React, { useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { LayoutGrid, Database, Play } from "lucide-react";
 import { ComponentNode, useEditorStore } from "./store/useEditorStore";
-import { CanvasRenderer } from "./components/CanvasRenderer";
 import { CanvasDroppable } from "./components/CanvasDroppable";
 import { ComponentPalette } from "./components/ComponentPalette";
 import { PropertyInspector } from "./components/PropertyInspector";
+import { CodePreviewModal } from "./components/CodePreviewModal";
 
 export default function App() {
   const { rootNode, addNode } = useEditorStore();
+  const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -133,6 +134,7 @@ export default function App() {
           <button
             type="button"
             className="flex items-center space-x-1 bg-emerald-600 hover:bg-emerald-500 text-xs text-white px-3 py-1.5 rounded font-medium transition"
+            onClick={() => setIsCodeModalOpen(true)}
           >
             <Play className="w-3.5 h-3.5 fill-current" />
             <span>Preview & Code</span>
@@ -150,6 +152,10 @@ export default function App() {
           <PropertyInspector />
         </div>
       </div>
+      <CodePreviewModal
+        isOpen={isCodeModalOpen}
+        onClose={() => setIsCodeModalOpen(false)}
+      />
     </DndContext>
   );
 }
