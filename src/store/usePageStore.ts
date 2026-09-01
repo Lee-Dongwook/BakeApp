@@ -5,6 +5,7 @@ import {
   updateNodeInTree,
   type ComponentNode,
 } from "./useCanvasStore";
+import { notifyEditorChanged } from "./editorChangeTracker";
 
 export interface Page {
   id: string;
@@ -114,8 +115,10 @@ export const usePageStore = create<PageState>((set) => ({
       activePageId: newPageId,
       pageParams: {},
     }));
+    notifyEditorChanged();
   },
-  deletePage: (pageId) =>
+  deletePage: (pageId) => {
+    const previousPageCount = getPageCount();
     set((state) => {
       if (state.pages.length <= 1) return state;
       const filtered = state.pages.filter((p) => p.id !== pageId);
@@ -125,14 +128,18 @@ export const usePageStore = create<PageState>((set) => ({
           state.activePageId === pageId ? filtered[0].id : state.activePageId,
         pageParams: state.activePageId === pageId ? {} : state.pageParams,
       };
-    }),
-  addNode: (pageId, parentId, newNode) =>
+    });
+    if (previousPageCount > 1) notifyEditorChanged();
+  },
+  addNode: (pageId, parentId, newNode) => {
     set((state) =>
       updatePageTree(state, pageId, (rootNode) =>
         addNodeToTree(rootNode, parentId, newNode),
       ),
-    ),
-  updateNodeStyle: (pageId, nodeId, newStyle) =>
+    );
+    notifyEditorChanged();
+  },
+  updateNodeStyle: (pageId, nodeId, newStyle) => {
     set((state) =>
       updatePageTree(state, pageId, (rootNode) =>
         updateNodeInTree(rootNode, nodeId, (node) => ({
@@ -140,8 +147,10 @@ export const usePageStore = create<PageState>((set) => ({
           style: { ...node.style, ...newStyle },
         })),
       ),
-    ),
-  updateNodeProps: (pageId, nodeId, newProps) =>
+    );
+    notifyEditorChanged();
+  },
+  updateNodeProps: (pageId, nodeId, newProps) => {
     set((state) =>
       updatePageTree(state, pageId, (rootNode) =>
         updateNodeInTree(rootNode, nodeId, (node) => ({
@@ -149,8 +158,10 @@ export const usePageStore = create<PageState>((set) => ({
           props: { ...node.props, ...newProps },
         })),
       ),
-    ),
-  updateNodeTextContent: (pageId, nodeId, text) =>
+    );
+    notifyEditorChanged();
+  },
+  updateNodeTextContent: (pageId, nodeId, text) => {
     set((state) =>
       updatePageTree(state, pageId, (rootNode) =>
         updateNodeInTree(rootNode, nodeId, (node) => ({
@@ -158,16 +169,22 @@ export const usePageStore = create<PageState>((set) => ({
           children: [text],
         })),
       ),
-    ),
-  deleteNode: (pageId, nodeId) =>
+    );
+    notifyEditorChanged();
+  },
+  deleteNode: (pageId, nodeId) => {
     set((state) =>
       updatePageTree(state, pageId, (rootNode) =>
         rootNode.id === nodeId
           ? rootNode
           : deleteNodeFromTree(rootNode, nodeId),
       ),
-    ),
+    );
+    notifyEditorChanged();
+  },
 }));
+
+const getPageCount = () => usePageStore.getState().pages.length;
 
 export const selectActivePage = (state: PageState): Page | undefined =>
   state.pages.find((page) => page.id === state.activePageId);

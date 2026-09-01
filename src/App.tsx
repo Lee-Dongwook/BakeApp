@@ -34,6 +34,7 @@ export default function App() {
   const loadDocument = useProjectDocumentStore((state) => state.load);
   const isDocumentLoading = useProjectDocumentStore((state) => state.isLoading);
   const isSaving = useProjectDocumentStore((state) => state.isSaving);
+  const isDirty = useProjectDocumentStore((state) => state.isDirty);
   const saveError = useProjectDocumentStore((state) => state.error);
   const activePage = usePageStore(selectActivePage);
   const addNode = usePageStore((state) => state.addNode);
@@ -192,6 +193,7 @@ export default function App() {
           onSignOut={signOut}
           onSave={() => void saveDocument(activeProject.id)}
           isSaving={isSaving}
+          isDirty={isDirty}
           saveError={saveError}
         />
 

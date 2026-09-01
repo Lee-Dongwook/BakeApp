@@ -2,6 +2,7 @@ import { create } from "zustand";
 import axios from "axios";
 import { useRuntimeStore } from "./useRuntimeStore";
 import { usePageStore } from "./usePageStore";
+import { notifyEditorChanged } from "./editorChangeTracker";
 
 export interface ApiQuery {
   id: string;
@@ -40,17 +41,24 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   queryResults: {},
   replaceQueries: (queries) => set({ queries, queryResults: {} }),
   resetQueries: () => set({ queries: structuredClone(initialQueries), queryResults: {} }),
-  addQuery: (query) => set((state) => ({ queries: [...state.queries, query] })),
-  updateQuery: (id, updated) =>
+  addQuery: (query) => {
+    set((state) => ({ queries: [...state.queries, query] }));
+    notifyEditorChanged();
+  },
+  updateQuery: (id, updated) => {
     set((state) => ({
       queries: state.queries.map((q) =>
         q.id === id ? { ...q, ...updated } : q,
       ),
-    })),
-  deleteQuery: (id) =>
+    }));
+    notifyEditorChanged();
+  },
+  deleteQuery: (id) => {
     set((state) => ({
       queries: state.queries.filter((q) => q.id !== id),
-    })),
+    }));
+    notifyEditorChanged();
+  },
   runQuery: async (queryId) => {
     const query = get().queries.find((q) => q.id === queryId);
     if (!query) return;

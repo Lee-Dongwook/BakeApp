@@ -10,6 +10,7 @@ interface HeaderProps {
   onSignOut: () => void;
   onSave: () => void;
   isSaving: boolean;
+  isDirty: boolean;
   saveError: string | null;
 }
 
@@ -21,6 +22,7 @@ export const Header: React.FC<HeaderProps> = ({
   onSignOut,
   onSave,
   isSaving,
+  isDirty,
   saveError,
 }) => {
   const mode = useRuntimeStore((state) => state.mode);
@@ -86,6 +88,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* 우측: DB Builder & Code Preview 액션 버튼 */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
+          {isDirty && <span className="text-xs text-amber-300">변경됨</span>}
           {saveError && <span className="max-w-40 truncate text-xs text-rose-400">{saveError}</span>}
           <button
             type="button"

@@ -4,6 +4,10 @@ import { usePageStore } from "./usePageStore";
 import type { Page } from "./usePageStore";
 import { useQueryStore } from "./useQueryStore";
 import type { ApiQuery } from "./useQueryStore";
+import {
+  getEditorRevision,
+  subscribeToEditorChanges,
+} from "./editorChangeTracker";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
@@ -14,8 +18,10 @@ interface ApiError {
 interface ProjectDocumentState {
   isLoading: boolean;
   isSaving: boolean;
+  isDirty: boolean;
   lastSavedAt: Date | null;
   error: string | null;
+  markDirty: () => void;
   load: (projectId: string) => Promise<void>;
   save: (projectId: string) => Promise<void>;
 }
@@ -29,14 +35,16 @@ const readErrorMessage = async (response: Response) => {
 export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
   isLoading: false,
   isSaving: false,
+  isDirty: false,
   lastSavedAt: null,
   error: null,
+  markDirty: () => set({ isDirty: true }),
 
   load: async (projectId) => {
     const accessToken = useAuthStore.getState().accessToken;
     if (!accessToken) return;
 
-    set({ isLoading: true, error: null, lastSavedAt: null });
+    set({ isLoading: true, error: null, lastSavedAt: null, isDirty: false });
     usePageStore.getState().resetPages();
     useQueryStore.getState().resetQueries();
     try {
@@ -61,6 +69,7 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
 
       set({
         isLoading: false,
+        isDirty: false,
         lastSavedAt: savedDocument.updatedAt ? new Date(savedDocument.updatedAt) : null,
       });
     } catch (error) {
@@ -81,6 +90,7 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
 
     const { pages } = usePageStore.getState();
     const { queries } = useQueryStore.getState();
+    const revisionAtSaveStart = getEditorRevision();
     set({ isSaving: true, error: null });
 
     try {
@@ -107,7 +117,12 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
       });
       if (!response.ok) throw new Error(await readErrorMessage(response));
 
-      set({ isSaving: false, lastSavedAt: new Date(), error: null });
+      set({
+        isSaving: false,
+        isDirty: getEditorRevision() !== revisionAtSaveStart,
+        lastSavedAt: new Date(),
+        error: null,
+      });
     } catch (error) {
       const message = error instanceof Error ? error.message : "저장에 실패했습니다.";
       set({ isSaving: false, error: message });
@@ -115,3 +130,5 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
     }
   },
 }));
+
+subscribeToEditorChanges(() => useProjectDocumentStore.getState().markDirty());
