@@ -5,15 +5,21 @@ import {
   Get,
   Param,
   Post,
+  Put,
   Req,
   UseGuards,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiOperation, ApiTags } from "@nestjs/swagger";
 import { AuthGuard } from "../auth/auth.guard";
+import { ProjectDocumentService } from "./project-document.service";
 import { ProjectService } from "./project.service";
 
 class CreateProjectDto {
   name: string;
+}
+
+class SaveProjectDocumentDto {
+  document: Record<string, unknown>;
 }
 
 @ApiTags("Projects (프로젝트)")
@@ -21,7 +27,10 @@ class CreateProjectDto {
 @UseGuards(AuthGuard)
 @Controller("api/projects")
 export class ProjectController {
-  constructor(private readonly projectService: ProjectService) {}
+  constructor(
+    private readonly projectService: ProjectService,
+    private readonly projectDocumentService: ProjectDocumentService,
+  ) {}
 
   @Post()
   @ApiOperation({ summary: "새 프로젝트 생성" })
@@ -47,5 +56,31 @@ export class ProjectController {
   @ApiOperation({ summary: "내 프로젝트 상세 조회" })
   async findOne(@Param("id") id: string, @Req() req: any) {
     return this.projectService.findOneByOwner(id, req.user.id);
+  }
+
+  @Get(":id/document")
+  @ApiOperation({ summary: "프로젝트 편집 문서 조회" })
+  async getDocument(@Param("id") id: string, @Req() req: any) {
+    await this.projectService.findOneByOwner(id, req.user.id);
+    return this.projectDocumentService.findByProjectId(id);
+  }
+
+  @Put(":id/document")
+  @ApiOperation({ summary: "프로젝트 편집 문서 저장" })
+  async saveDocument(
+    @Param("id") id: string,
+    @Body() dto: SaveProjectDocumentDto,
+    @Req() req: any,
+  ) {
+    if (
+      !dto.document ||
+      typeof dto.document !== "object" ||
+      Array.isArray(dto.document)
+    ) {
+      throw new BadRequestException("document는 JSON 객체여야 합니다.");
+    }
+
+    await this.projectService.findOneByOwner(id, req.user.id);
+    return this.projectDocumentService.save(id, dto.document);
   }
 }
