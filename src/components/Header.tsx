@@ -1,5 +1,6 @@
 import React from "react";
-import { Code2, Database } from "lucide-react";
+import { useEditorStore } from "../store/useEditorStore";
+import { Code2, Database, Play, Edit3, RotateCcw } from "lucide-react";
 
 interface HeaderProps {
   onOpenDbBuilder: () => void;
@@ -10,8 +11,11 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenDbBuilder,
   onOpenCodePreview,
 }) => {
+  const { mode, setMode, resetFormState } = useEditorStore();
+
   return (
     <header className="flex h-14 shrink-0 items-center justify-between border-b border-slate-800 bg-slate-950 px-6 text-white">
+      {/* 로고 영역 */}
       <div className="flex items-center gap-3">
         <span className="text-2xl">🍞</span>
         <h1 className="font-bold text-lg tracking-wide text-amber-400">
@@ -19,7 +23,48 @@ export const Header: React.FC<HeaderProps> = ({
         </h1>
       </div>
 
+      {/* 중앙: Edit / Live Preview 모드 스위처 */}
+      <div className="flex items-center bg-slate-900 p-1 rounded-lg border border-slate-800">
+        <button
+          type="button"
+          onClick={() => setMode("EDIT")}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold transition-all ${
+            mode === "EDIT"
+              ? "bg-amber-500 text-slate-950 shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Edit3 className="h-3.5 w-3.5" />
+          <span>Edit Mode</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMode("PREVIEW")}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded text-xs font-semibold transition-all ${
+            mode === "PREVIEW"
+              ? "bg-emerald-500 text-slate-950 shadow-sm"
+              : "text-slate-400 hover:text-slate-200"
+          }`}
+        >
+          <Play className="h-3.5 w-3.5" />
+          <span>Live Preview</span>
+        </button>
+      </div>
+
+      {/* 우측: DB Builder & Code Preview 액션 버튼 */}
       <div className="flex items-center gap-3">
+        {mode === "PREVIEW" && (
+          <button
+            type="button"
+            onClick={resetFormState}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg text-xs font-medium border border-slate-700 transition-all"
+            title="입력 폼 상태 초기화"
+          >
+            <RotateCcw className="h-3.5 w-3.5" />
+            <span>Reset State</span>
+          </button>
+        )}
+
         <button
           type="button"
           onClick={onOpenDbBuilder}
@@ -28,6 +73,7 @@ export const Header: React.FC<HeaderProps> = ({
           <Database className="h-3.5 w-3.5" />
           <span>DB Builder</span>
         </button>
+
         <button
           type="button"
           onClick={onOpenCodePreview}

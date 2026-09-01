@@ -10,10 +10,20 @@ export interface ComponentNode {
 }
 
 interface EditorState {
+  mode: "EDIT" | "PREVIEW";
+  setMode: (mode: "EDIT" | "PREVIEW") => void;
+
   rootNode: ComponentNode;
   selectedNodeId: string | null;
-
   setSelectedNodeId: (id: string | null) => void;
+
+  formState: Record<string, any>;
+  setFormField: (field: string, value: any) => void;
+  resetFormState: () => void;
+
+  workflowResults: Record<string, any>;
+  setWorkflowResult: (actionId: string, result: any) => void;
+
   addNode: (parentId: string, newNode: ComponentNode) => void;
   updateNodeStyle: (nodeId: string, newStyle: Record<string, any>) => void;
   updateNodeProps: (nodeId: string, newProps: Record<string, any>) => void;
@@ -111,10 +121,26 @@ const deleteNodeFromTree = (
 };
 
 export const useEditorStore = create<EditorState>((set) => ({
+  mode: "EDIT",
+  setMode: (mode) => set({ mode }),
+
   rootNode: initialRootNode,
   selectedNodeId: "node-welcome-text",
 
   setSelectedNodeId: (id) => set({ selectedNodeId: id }),
+
+  formState: {},
+  setFormField: (field, value) =>
+    set((state) => ({
+      formState: { ...state.formState, [field]: value },
+    })),
+  resetFormState: () => set({ formState: {} }),
+
+  workflowResults: {},
+  setWorkflowResult: (actionId, result) =>
+    set((state) => ({
+      workflowResults: { ...state.workflowResults, [actionId]: result },
+    })),
 
   addNode: (parentId, newNode) =>
     set((state) => ({

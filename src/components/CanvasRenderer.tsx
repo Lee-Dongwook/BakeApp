@@ -7,32 +7,104 @@ interface CanvasRendererProps {
 }
 
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
-  const { selectedNodeId, setSelectedNodeId } = useEditorStore();
+  const {
+    mode,
+    selectedNodeId,
+    setSelectedNodeId,
+    formState,
+    setFormField,
+    workflowResults,
+    setWorkflowResult,
+  } = useEditorStore();
+
+  const resolveDynamicValue = (val: string): string => {
+    if (typeof val !== "string") return val;
+
+    return val.replace(/\{\P\s*([\w\.]+)\s*\}\}/g, (_, path) => {
+      const keys = path.split(".");
+      if (keys[0] === "form") {
+        return formState[keys[1]] ?? "";
+      }
+
+      if (keys[0] === "steps" && keys[1] && keys[2]) {
+        return workflowResults[keys[1]]?.[keys[2]] ?? "";
+      }
+
+      return "";
+    });
+  };
 
   if (typeof node === "string") {
-    return <span>{node}</span>;
+    return <span>{resolveDynamicValue(node)}</span>;
   }
+
   const isContainer = node.type === "Container" || node.type === "View";
   const { setNodeRef, isOver } = useDroppable({
     id: node.id,
     data: { node },
-    disabled: !isContainer,
+    disabled: mode === "PREVIEW" || !isContainer,
   });
 
-  const isSelected = selectedNodeId === node.id;
+  const isSelected = mode === "EDIT" && selectedNodeId === node.id;
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    setSelectedNodeId(node.id);
+
+    if (mode === "EDIT") {
+      setSelectedNodeId(node.id);
+      return;
+    }
+
+    const actions = node.props?.onClickWorkflow || [];
+    for (const act of actions) {
+      if (act.type === "SHOW_ALERT") {
+        const msg = resolveDynamicValue(
+          act.params?.message || "처리되었습니다.",
+        );
+        alert(msg);
+      } else if (act.type === "DB_INSERT") {
+        try {
+          const parsedData = JSON.parse(
+            resolveDynamicValue(JSON.stringify(act.params?.data || {})),
+          );
+
+          console.log(
+            `[Workflow Executing] DB Insert -> Table: ${act.params?.tableName}`,
+            parsedData,
+          );
+
+          const res = await fetch(
+            "http://localhost:3000/api/workflow/execute",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                actionType: "DB_INSERT",
+                tableName: act.params?.tableName,
+                data: parsedData,
+              }),
+            },
+          );
+
+          const resultData = await res.json();
+          setWorkflowResult(act.id, resultData);
+        } catch (error) {
+          console.error("Workflow Execution Error", error);
+        }
+      }
+    }
   };
 
   const selectionStyle = isSelected
     ? "ring-2 ring-amber-500 ring-offset-1 z-10"
-    : "hover:ring-1 hover:ring-amber-300";
+    : mode === "EDIT"
+      ? "hover:ring-1 hover:ring-amber-300"
+      : "";
 
-  const dropZoneStyle = isOver
-    ? "bg-amber-500/10 border-amber-400 border-dashed"
-    : "";
+  const dropZoneStyle =
+    mode === "EDIT" && isOver
+      ? "bg-amber-500/10 border-amber-400 border-dashed"
+      : "";
 
   switch (node.type) {
     case "Container":
@@ -42,20 +114,22 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           ref={setNodeRef}
           onClick={handleClick}
           style={node.style as React.CSSProperties}
-          className={`relative transition-all cursor-pointer min-h-10 ${selectionStyle} ${dropZoneStyle}`}
+          className={`relative transition-all ${
+            mode === "EDIT" ? "cursor-pointer min-h-10" : ""
+          } ${selectionStyle} ${dropZoneStyle}`}
         >
-          {node.children && node.children.length > 0 ? (
-            node.children.map((child, idx) => (
-              <CanvasRenderer
-                key={typeof child === "string" ? idx : child.id}
-                node={child}
-              />
-            ))
-          ) : (
-            <div className="text-[10px] text-slate-400 text-center py-2 border border-dashed border-slate-300 rounded">
-              여기로 요소를 끌어다 놓으세요
-            </div>
-          )}
+          {node.children && node.children.length > 0
+            ? node.children.map((child, idx) => (
+                <CanvasRenderer
+                  key={typeof child === "string" ? idx : child.id}
+                  node={child}
+                />
+              ))
+            : mode === "EDIT" && (
+                <div className="text-[10px] text-slate-400 text-center py-2 border border-dashed border-slate-300 rounded">
+                  여기로 요소를 끌어다 놓으세요
+                </div>
+              )}
         </div>
       );
 
@@ -81,7 +155,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           type="button"
           onClick={handleClick}
           style={node.style as React.CSSProperties}
-          className={`flex items-center justify-center transition-all cursor-pointer select-none ${selectionStyle}`}
+          className={`flex items-center justify-center transition-all cursor-pointer select-none hover:opacity-90 active:scale-95 ${selectionStyle}`}
         >
           {node.children?.map((child, idx) => (
             <CanvasRenderer
@@ -93,13 +167,20 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
       );
 
     case "TextInput":
+      const fieldName = node.props?.fieldName || node.id;
       return (
         <input
           onClick={handleClick}
-          readOnly
+          readOnly={mode === "EDIT"}
           placeholder={node.props?.placeholder || "입력하세요"}
+          value={formState[fieldName] || ""}
+          onChange={(e) => setFormField(fieldName, e.target.value)}
           style={node.style as React.CSSProperties}
-          className={`transition-all cursor-pointer ${selectionStyle}`}
+          className={`transition-all ${
+            mode === "EDIT"
+              ? "cursor-pointer"
+              : "focus:outline-none focus:ring-2 focus:ring-amber-500"
+          } ${selectionStyle}`}
         />
       );
 
