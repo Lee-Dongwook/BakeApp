@@ -2,7 +2,15 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useEditorStore } from "../store/useEditorStore";
 import { generateReactCode } from "../utils/codeGenerator";
-import { X, Copy, Check, Code2, Smartphone, Globe } from "lucide-react";
+import {
+  X,
+  Copy,
+  Check,
+  Code2,
+  Smartphone,
+  Globe,
+  Download,
+} from "lucide-react";
 
 interface CodePreviewModalProps {
   isOpen: boolean;
