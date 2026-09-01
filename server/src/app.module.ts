@@ -6,6 +6,7 @@ import { WorkflowModule } from "./modules/workflow/workflow.module";
 import { AuthModule } from "./modules/auth/auth.module";
 import { SchemaModule } from "./modules/schema/schema.module";
 import { DatabaseModule } from "./modules/database/database.module";
+import { ProjectModule } from "./modules/project/project.module";
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { DatabaseModule } from "./modules/database/database.module";
     GeneratorModule,
     WorkflowModule,
     AuthModule,
+    ProjectModule,
   ],
   controllers: [],
 })

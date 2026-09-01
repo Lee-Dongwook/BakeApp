@@ -4,6 +4,7 @@ import { DynamicRlsService } from "./dynamic-rls.service";
 import { RbacContextInterceptor } from "./rbac-context.interceptor";
 import { AuthController } from "./auth.controller";
 import { SupabaseService } from "../../config/supabase.service";
+import { AuthGuard } from "./auth.guard";
 
 @Module({
   providers: [
@@ -11,8 +12,14 @@ import { SupabaseService } from "../../config/supabase.service";
     AuthService,
     DynamicRlsService,
     RbacContextInterceptor,
+    AuthGuard,
   ],
   controllers: [AuthController],
-  exports: [AuthService, DynamicRlsService, RbacContextInterceptor],
+  exports: [
+    AuthService,
+    DynamicRlsService,
+    RbacContextInterceptor,
+    AuthGuard,
+  ],
 })
 export class AuthModule {}
