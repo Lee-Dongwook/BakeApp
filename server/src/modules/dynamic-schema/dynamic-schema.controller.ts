@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Req, UseGuards } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
 import {
   DynamicSchemaService,
@@ -30,6 +30,16 @@ export class DynamicSchemaController {
     private readonly schemaService: DynamicSchemaService,
     private readonly projectService: ProjectService,
   ) {}
+
+  @Get("tables/:projectId")
+  @ApiOperation({ summary: "프로젝트 테이블 목록 및 컬럼 조회" })
+  async getProjectTables(
+    @Param("projectId") projectId: string,
+    @Req() req: any,
+  ) {
+    await this.projectService.findOneAccessibleByUser(projectId, req.user.id);
+    return this.schemaService.getProjectTables(projectId);
+  }
 
   @Post("table")
   @ApiOperation({

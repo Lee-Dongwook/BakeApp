@@ -11,6 +11,15 @@ export interface ColumnDefinition {
   isRequired?: boolean;
 }
 
+export interface ProjectTableSummary {
+  name: string;
+  columns: Array<{
+    name: string;
+    dataType: string;
+    isRequired: boolean;
+  }>;
+}
+
 @Injectable()
 export class DynamicSchemaService {
   constructor(
@@ -46,6 +55,48 @@ export class DynamicSchemaService {
     }
 
     return identifier;
+  }
+
+  private getProjectTablePrefix(projectId: string): string {
+    return `tenant_${projectId.replace(/-/g, "_")}_`;
+  }
+
+  async getProjectTables(projectId: string): Promise<ProjectTableSummary[]> {
+    const tablePrefix = this.getProjectTablePrefix(projectId);
+    const tableNamePattern = `^${tablePrefix}[a-z0-9_]+$`;
+    const tableResult = await this.dbService.query<{ table_name: string }>(
+      `SELECT table_name
+       FROM information_schema.tables
+       WHERE table_schema = 'public' AND table_name ~ $1
+       ORDER BY table_name`,
+      [tableNamePattern],
+    );
+
+    return Promise.all(
+      tableResult.rows.map(async ({ table_name }) => {
+        const columnResult = await this.dbService.query<{
+          column_name: string;
+          data_type: string;
+          is_nullable: "YES" | "NO";
+        }>(
+          `SELECT column_name, data_type, is_nullable
+           FROM information_schema.columns
+           WHERE table_schema = 'public' AND table_name = $1
+             AND column_name NOT IN ('id', 'created_at')
+           ORDER BY ordinal_position`,
+          [table_name],
+        );
+
+        return {
+          name: table_name.slice(tablePrefix.length),
+          columns: columnResult.rows.map((column) => ({
+            name: column.column_name,
+            dataType: column.data_type,
+            isRequired: column.is_nullable === "NO",
+          })),
+        };
+      }),
+    );
   }
 
   async createCustomTable(
