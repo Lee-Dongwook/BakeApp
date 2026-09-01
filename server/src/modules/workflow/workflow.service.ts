@@ -1,16 +1,16 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
 import { DynamicDataService } from "../dynamic-data/dynamic-data.service";
 import { ActionNode, WorkflowPayload } from "./workflow.interface";
+import { ValueResolverService } from "./value-resolver.service";
 
 @Injectable()
 export class WorkflowService {
-  constructor(private readonly dataService: DynamicDataService) {}
+  constructor(
+    private readonly dataService: DynamicDataService,
+    private readonly valueResolver: ValueResolverService,
+  ) {}
 
-  private async executeSingleAction(
-    projectId: string,
-    action: ActionNode,
-    previousResults: Record<string, any>,
-  ) {
+  private async executeSingleAction(projectId: string, action: ActionNode) {
     const { type, params } = action;
 
     switch (type) {
@@ -75,7 +75,10 @@ export class WorkflowService {
     }
   }
 
-  async executeWorkflow(payload: WorkflowPayload) {
+  async executeWorkflow(
+    payload: WorkflowPayload,
+    clientContext: Record<string, any>,
+  ) {
     const { projectId, actions } = payload;
 
     if (!actions || actions.length === 0) {
@@ -85,6 +88,11 @@ export class WorkflowService {
     const executionLog: string[] = [];
     const executionResults: Record<string, any> = {};
 
+    const runtimeContext: Record<string, any> = {
+      ...clientContext,
+      steps: executionResults,
+    };
+
     let currentAction: ActionNode | undefined = actions[0];
 
     while (currentAction) {
@@ -93,13 +101,18 @@ export class WorkflowService {
       );
 
       try {
-        const result = await this.executeSingleAction(
-          projectId,
-          currentAction,
-          executionResults,
+        const resolvedParams = this.valueResolver.resolve(
+          currentAction.params,
+          runtimeContext,
         );
 
+        const result = await this.executeSingleAction(projectId, {
+          ...currentAction,
+          params: resolvedParams,
+        });
+
         executionResults[currentAction.id] = result;
+        runtimeContext.steps[currentAction.id] = result;
 
         if (currentAction.nextActionId) {
           currentAction = actions.find(
