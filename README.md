@@ -26,19 +26,27 @@
 ## 📁 Architecture Overview
 
 ```text
-bakeapp-backend/
-├── src/
-│   ├── config/              # Supabase 및 PostgreSQL Direct Connection Pool 설정
-│   │   ├── database.service.ts
-│   │   └── supabase.service.ts
-│   ├── modules/
-│   │   ├── dynamic-schema/  # [Step 2] 동적 DDL 생성기 (CREATE/ALTER TABLE)
-│   │   ├── dynamic-data/    # [Step 3] 동적 CRUD Engine (SELECT/INSERT/UPDATE/DELETE)
-│   │   └── generator/       # [Step 4] React Native & React Web UI 컴파일러 Engine
-│   ├── app.module.ts        # 루트 모듈
-│   └── main.ts              # 엔트리 포인트 및 Swagger 초기화
-├── .env                     # 환경변수 (Git 제외)
-├── nodemon.json
+bake/
+├── src/                     # React 기반 노코드 편집기
+│   ├── components/          # 캔버스, 팔레트, 속성 및 코드 미리보기 UI
+│   └── store/               # 편집기 상태 관리
+├── server/
+│   ├── src/
+│   │   ├── config/
+│   │   │   └── supabase.service.ts
+│   │   ├── modules/
+│   │   │   ├── database/       # PostgreSQL 연결 및 트랜잭션
+│   │   │   ├── auth/           # 인증, RBAC 및 RLS
+│   │   │   ├── dynamic-schema/ # 동적 DDL 생성기
+│   │   │   ├── dynamic-data/   # 동적 CRUD 엔진
+│   │   │   ├── generator/      # React Native/Web 컴파일러
+│   │   │   ├── schema/         # 스키마 레지스트리 및 동적 Swagger
+│   │   │   └── workflow/       # 액션 워크플로우 실행기
+│   │   ├── app.module.ts
+│   │   └── main.ts
+│   ├── .env                 # 서버 환경변수 (Git 제외)
+│   ├── nodemon.json
+│   └── package.json
 ├── package.json
-└── tsconfig.json
+└── vite.config.ts
 ```

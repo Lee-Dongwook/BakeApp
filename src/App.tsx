@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import { LayoutGrid, Database, Play } from "lucide-react";
 import { ComponentNode, useEditorStore } from "./store/useEditorStore";

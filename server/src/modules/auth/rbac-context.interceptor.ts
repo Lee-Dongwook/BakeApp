@@ -5,7 +5,7 @@ import {
   CallHandler,
 } from "@nestjs/common";
 import { Observable } from "rxjs";
-import { DatabaseService } from "../../config/database.service";
+import { DatabaseService } from "../database/database.service";
 
 @Injectable()
 export class RbacContextInterceptor implements NestInterceptor {

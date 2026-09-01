@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
-import { DatabaseService } from "../../config/database.service";
+import { DatabaseService } from "../database/database.service";
 import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
 
@@ -82,10 +82,11 @@ export class DynamicSchemaService {
     `;
 
     try {
-      await this.dbService.query(sql);
-
-      await this.dbService.query(enableRlsSql);
-      await this.dbService.query(createPolicySql);
+      await this.dbService.runInTransaction(async (client) => {
+        await client.query(sql);
+        await client.query(enableRlsSql);
+        await client.query(createPolicySql);
+      });
 
       this.schemaRegistry.saveSchema(projectId, {
         tableName: cleanTableName,

@@ -1,6 +1,6 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { ComponentNode, useEditorStore } from "../store/useEditorStore";
+import { ComponentNode } from "../store/useEditorStore";
 import { CanvasRenderer } from "./CanvasRenderer";
 
 interface CanvasDroppableProps {

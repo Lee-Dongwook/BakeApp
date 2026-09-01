@@ -3,7 +3,7 @@ import {
   TablePolicyDefinition,
   UserRole,
 } from "./interfaces/rbac-policy.interface";
-import { DatabaseService } from "../../config/database.service";
+import { DatabaseService } from "../database/database.service";
 
 @Injectable()
 export class DynamicRlsService {

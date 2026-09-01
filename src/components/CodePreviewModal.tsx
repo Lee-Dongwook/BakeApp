@@ -13,7 +13,7 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
   onClose,
 }) => {
   const { rootNode } = useEditorStore();
-  const [target, SetTarget] = useState<"rn" | "react">("rn");
+  const [target, setTarget] = useState<"rn" | "react">("rn");
   const [code, setCode] = useState<string>("코드 생성 중...");
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
