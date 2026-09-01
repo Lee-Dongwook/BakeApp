@@ -3,6 +3,7 @@ import { useDroppable } from "@dnd-kit/core";
 import { type ComponentNode, useCanvasStore } from "../store/useCanvasStore";
 import { usePageStore } from "../store/usePageStore";
 import { useRuntimeStore } from "../store/useRuntimeStore";
+import { useQueryStore } from "../store/useQueryStore";
 
 interface CanvasRendererProps {
   node: ComponentNode | string;
@@ -15,18 +16,34 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
   const { selectedNodeId, setSelectedNodeId } = useCanvasStore();
 
   const { setActivePage, pageParams } = usePageStore();
+  const { queryResults } = useQueryStore();
 
   const resolveDynamicValue = (val: string): string => {
     if (typeof val !== "string") return val;
 
     return val.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) => {
       const keys = path.split(".");
-      if (keys[0] === "form") {
-        return formState[keys[1]] ?? "";
-      }
+      if (keys[0] === "form") return formState[keys[1]] ?? "";
+      if (keys[0] === "params") return pageParams[keys[1]] ?? "";
 
-      if (keys[0] === "params") {
-        return pageParams[keys[1]] ?? "";
+      if (keys[0] === "queries") {
+        const queryName = keys[1];
+        const resultObj = queryResults[queryName];
+        if (!resultObj) return "";
+
+        const subPaths = keys.slice(2);
+
+        const target = subPaths.reduce<unknown>((acc, key) => {
+          if (acc !== null && typeof acc === "object") {
+            return (acc as Record<string, unknown>)[key];
+          }
+        }, resultObj);
+
+        if (target === undefined || target === null) return "";
+
+        return typeof target === "object"
+          ? JSON.stringify(target)
+          : String(target);
       }
 
       if (keys[0] === "steps" && keys[1] && keys[2]) {
@@ -73,6 +90,12 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           parsedParams,
         );
         setActivePage(targetPageId, parsedParams);
+      }
+      if (act.type === "RUN_QUERY") {
+        const queryId = act.params?.queryId;
+        if (queryId) {
+          await useQueryStore.getState().runQuery(queryId);
+        }
       }
       if (act.type === "SHOW_ALERT") {
         const msg = resolveDynamicValue(
