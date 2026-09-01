@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { useEditorStore } from "../store/useEditorStore";
+import { generateReactCode } from "../utils/codeGenerator";
 import { X, Copy, Check, Code2, Smartphone, Globe } from "lucide-react";
 
 interface CodePreviewModalProps {
@@ -34,8 +35,12 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
         );
         setCode(response.data.code);
       } catch (error) {
-        console.error("Code generation failed:", error);
-        setCode("코드 생성 실패");
+        console.warn(
+          "백엔드 컴파일러 연결 실패 - 클라이언트 로컬 변환기로 전환합니다:",
+          error,
+        );
+        const fallbackCode = generateReactCode(rootNode);
+        setCode(fallbackCode);
       } finally {
         setLoading(false);
       }
@@ -50,6 +55,20 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleDownload = () => {
+    const fileName =
+      target === "rn" ? "GeneratedScreen.rn.tsx" : "GeneratedScreen.tsx";
+    const blob = new Blob([code], { type: "text/typescript" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   };
 
   return (
@@ -134,6 +153,15 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
                 <span>코드 복사</span>
               </>
             )}
+          </button>
+
+          <button
+            type="button"
+            onClick={handleDownload}
+            className="flex items-center space-x-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 px-4 py-2 rounded-lg text-xs font-bold shadow transition"
+          >
+            <Download className="w-3.5 h-3.5" />
+            <span>파일 다운로드</span>
           </button>
         </div>
       </div>
