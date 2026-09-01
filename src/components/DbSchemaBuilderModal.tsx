@@ -48,6 +48,10 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   const [tables, setTables] = useState<ProjectTable[]>([]);
   const [isTablesLoading, setIsTablesLoading] = useState(false);
   const [tablesError, setTablesError] = useState<string | null>(null);
+  const [selectedTable, setSelectedTable] = useState<string | null>(null);
+  const [records, setRecords] = useState<Record<string, unknown>[]>([]);
+  const [isRecordsLoading, setIsRecordsLoading] = useState(false);
+  const [recordsError, setRecordsError] = useState<string | null>(null);
 
   const loadTables = async () => {
     const accessToken = useAuthStore.getState().accessToken;
@@ -81,8 +85,47 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   };
 
   useEffect(() => {
-    if (isOpen) void loadTables();
+    if (isOpen) {
+      setSelectedTable(null);
+      setRecords([]);
+      void loadTables();
+    }
   }, [isOpen, projectId]);
+
+  const loadRecords = async (tableName: string) => {
+    const accessToken = useAuthStore.getState().accessToken;
+    if (!accessToken) return;
+
+    setSelectedTable(tableName);
+    setIsRecordsLoading(true);
+    setRecordsError(null);
+    try {
+      const apiBaseUrl =
+        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+      const response = await fetch(
+        `${apiBaseUrl}/api/dynamic-data/${projectId}/${tableName}?limit=5`,
+        { headers: { Authorization: `Bearer ${accessToken}` } },
+      );
+      const data = (await response.json()) as
+        | { data: Record<string, unknown>[] }
+        | ErrorResponse;
+      if (!response.ok) {
+        const errorMessage = (data as ErrorResponse).message;
+        throw new Error(
+          Array.isArray(errorMessage)
+            ? errorMessage.join(", ")
+            : errorMessage || "레코드를 불러오지 못했습니다.",
+        );
+      }
+      setRecords((data as { data: Record<string, unknown>[] }).data);
+    } catch (error) {
+      setRecordsError(
+        error instanceof Error ? error.message : "레코드를 불러오지 못했습니다.",
+      );
+    } finally {
+      setIsRecordsLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -398,21 +441,70 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
           ) : (
             <ul className="max-h-32 space-y-2 overflow-y-auto">
               {tables.map((table) => (
-                <li key={table.name} className="rounded border border-slate-200 bg-white px-3 py-2">
-                  <p className="text-xs font-bold text-slate-800">{table.name}</p>
-                  <p className="mt-1 text-[11px] text-slate-500">
-                    {table.columns.length === 0
-                      ? "사용자 정의 컬럼 없음"
-                      : table.columns
-                          .map(
-                            (column) =>
-                              `${column.name}: ${column.dataType}${column.isRequired ? " (필수)" : ""}`,
-                          )
-                          .join(", ")}
-                  </p>
+                <li key={table.name}>
+                  <button
+                    type="button"
+                    onClick={() => void loadRecords(table.name)}
+                    className={`w-full rounded border px-3 py-2 text-left transition ${
+                      selectedTable === table.name
+                        ? "border-amber-400 bg-amber-50"
+                        : "border-slate-200 bg-white hover:border-amber-300"
+                    }`}
+                  >
+                    <p className="text-xs font-bold text-slate-800">{table.name}</p>
+                    <p className="mt-1 text-[11px] text-slate-500">
+                      {table.columns.length === 0
+                        ? "사용자 정의 컬럼 없음"
+                        : table.columns
+                            .map(
+                              (column) =>
+                                `${column.name}: ${column.dataType}${column.isRequired ? " (필수)" : ""}`,
+                            )
+                            .join(", ")}
+                    </p>
+                  </button>
                 </li>
               ))}
             </ul>
+          )}
+          {selectedTable && (
+            <div className="mt-4 border-t border-slate-200 pt-3">
+              <h5 className="mb-2 text-xs font-bold text-slate-700">
+                {selectedTable} 최근 레코드
+              </h5>
+              {isRecordsLoading ? (
+                <p className="text-xs text-slate-500">레코드를 불러오는 중…</p>
+              ) : recordsError ? (
+                <p className="text-xs text-rose-600">{recordsError}</p>
+              ) : records.length === 0 ? (
+                <p className="text-xs text-slate-500">등록된 레코드가 없습니다.</p>
+              ) : (
+                <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+                  <table className="min-w-full text-left text-[11px]">
+                    <thead className="bg-slate-100 text-slate-600">
+                      <tr>
+                        {Object.keys(records[0]).map((key) => (
+                          <th key={key} className="px-2 py-1.5 font-semibold">{key}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {records.map((record, index) => (
+                        <tr key={String(record.id ?? index)} className="border-t border-slate-100">
+                          {Object.keys(records[0]).map((key) => (
+                            <td key={key} className="max-w-36 truncate px-2 py-1.5 text-slate-700">
+                              {typeof record[key] === "object"
+                                ? JSON.stringify(record[key])
+                                : String(record[key] ?? "")}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
           )}
         </section>
       </div>
