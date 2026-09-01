@@ -19,6 +19,7 @@ import { LoginScreen } from "./components/LoginScreen";
 import { ProjectDashboard } from "./components/ProjectDashboard";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
+import { useProjectDocumentStore } from "./store/useProjectDocumentStore";
 
 type SidebarTab = "COMPONENTS" | "PAGES" | "QUERIES";
 
@@ -29,6 +30,9 @@ export default function App() {
   const signOut = useAuthStore((state) => state.signOut);
   const activeProject = useProjectStore((state) => state.activeProject);
   const closeProject = useProjectStore((state) => state.closeProject);
+  const saveDocument = useProjectDocumentStore((state) => state.save);
+  const isSaving = useProjectDocumentStore((state) => state.isSaving);
+  const saveError = useProjectDocumentStore((state) => state.error);
   const activePage = usePageStore(selectActivePage);
   const addNode = usePageStore((state) => state.addNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
@@ -174,6 +178,9 @@ export default function App() {
           projectName={activeProject.name}
           onBackToProjects={closeProject}
           onSignOut={signOut}
+          onSave={() => void saveDocument(activeProject.id)}
+          isSaving={isSaving}
+          saveError={saveError}
         />
 
         {/* Workspace */}

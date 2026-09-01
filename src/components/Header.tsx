@@ -1,6 +1,6 @@
 import React from "react";
 import { useRuntimeStore } from "../store/useRuntimeStore";
-import { ChevronLeft, Code2, Database, Edit3, LogOut, Play, RotateCcw } from "lucide-react";
+import { ChevronLeft, Code2, Database, Edit3, LogOut, Play, RotateCcw, Save } from "lucide-react";
 
 interface HeaderProps {
   onOpenDbBuilder: () => void;
@@ -8,6 +8,9 @@ interface HeaderProps {
   projectName: string;
   onBackToProjects: () => void;
   onSignOut: () => void;
+  onSave: () => void;
+  isSaving: boolean;
+  saveError: string | null;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -16,6 +19,9 @@ export const Header: React.FC<HeaderProps> = ({
   projectName,
   onBackToProjects,
   onSignOut,
+  onSave,
+  isSaving,
+  saveError,
 }) => {
   const mode = useRuntimeStore((state) => state.mode);
   const setMode = useRuntimeStore((state) => state.setMode);
@@ -79,6 +85,18 @@ export const Header: React.FC<HeaderProps> = ({
 
       {/* 우측: DB Builder & Code Preview 액션 버튼 */}
       <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {saveError && <span className="max-w-40 truncate text-xs text-rose-400">{saveError}</span>}
+          <button
+            type="button"
+            onClick={onSave}
+            disabled={isSaving}
+            className="flex items-center gap-1.5 rounded-lg border border-emerald-500/40 px-3 py-1.5 text-xs font-semibold text-emerald-300 transition hover:bg-emerald-500/10 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            <Save className="h-3.5 w-3.5" />
+            {isSaving ? "저장 중…" : "저장"}
+          </button>
+        </div>
         {mode === "PREVIEW" && (
           <button
             type="button"
