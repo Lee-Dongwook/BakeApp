@@ -1,19 +1,24 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { TableMeta } from "./interfaces/schema-registry.interface";
+import {
+  ColumnMeta,
+  TableMeta,
+} from "./interfaces/schema-registry.interface";
 
 @Injectable()
 export class SchemaRegistryService {
   private readonly logger = new Logger(SchemaRegistryService.name);
   private registry = new Map<string, TableMeta>();
 
-  async saveSchema(
+  saveSchema(
     projectId: string,
     tableMeta: Omit<TableMeta, "projectId">,
-  ): Promise<void> {
+  ): void {
     const key = `${projectId}:${tableMeta.tableName}`;
+    const previous = this.registry.get(key);
     const payload: TableMeta = {
       projectId,
       ...tableMeta,
+      createdAt: previous?.createdAt ?? tableMeta.createdAt ?? new Date(),
       updatedAt: new Date(),
     };
 
@@ -23,15 +28,26 @@ export class SchemaRegistryService {
     );
   }
 
-  async getSchema(
-    projectId: string,
-    tableName: string,
-  ): Promise<TableMeta | null> {
+  addColumn(projectId: string, tableName: string, column: ColumnMeta): boolean {
     const key = `${projectId}:${tableName}`;
-    return this.registry.get(key) || null;
+    const table = this.registry.get(key);
+    if (!table) return false;
+
+    const columns = table.columns.filter(({ name }) => name !== column.name);
+    this.registry.set(key, {
+      ...table,
+      columns: [...columns, column],
+      updatedAt: new Date(),
+    });
+    return true;
   }
 
-  async getAllSchemas(projectId?: string): Promise<TableMeta[]> {
+  getSchema(projectId: string, tableName: string): TableMeta | null {
+    const key = `${projectId}:${tableName}`;
+    return this.registry.get(key) ?? null;
+  }
+
+  getAllSchemas(projectId?: string): TableMeta[] {
     const allSchemas = Array.from(this.registry.values());
     if (projectId) {
       return allSchemas.filter((schema) => schema.projectId === projectId);
@@ -39,7 +55,7 @@ export class SchemaRegistryService {
     return allSchemas;
   }
 
-  async deleteSchema(projectId: string, tableName: string): Promise<boolean> {
+  deleteSchema(projectId: string, tableName: string): boolean {
     const key = `${projectId}:${tableName}`;
     return this.registry.delete(key);
   }

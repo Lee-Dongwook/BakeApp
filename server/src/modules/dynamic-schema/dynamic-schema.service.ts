@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from "@nestjs/common";
-import { DatabaseService } from "src/config/database.service";
+import { DatabaseService } from "../../config/database.service";
 import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
 
@@ -74,7 +74,7 @@ export class DynamicSchemaService {
       BEGIN
         IF NOT EXISTS (
           SELECT 1 FROM pg_policies
-          WHERE tablename = '${fullTableName}' AND policyname = 'Tenant Isloation Policy'
+          WHERE tablename = '${fullTableName}' AND policyname = 'Tenant Isolation Policy'
         ) THEN
           CREATE POLICY "Tenant Isolation Policy" ON "${fullTableName}" FOR ALL USING (true);
         END IF;
@@ -87,7 +87,10 @@ export class DynamicSchemaService {
       await this.dbService.query(enableRlsSql);
       await this.dbService.query(createPolicySql);
 
-      await this.schemaRegistry.saveSchema(projectId, dto);
+      this.schemaRegistry.saveSchema(projectId, {
+        tableName: cleanTableName,
+        columns,
+      });
 
       await this.dynamicSwagger.refreshSwaggerDoc();
 
@@ -121,6 +124,10 @@ export class DynamicSchemaService {
 
     try {
       await this.dbService.query(sql);
+
+      this.schemaRegistry.addColumn(projectId, cleanTableName, column);
+      await this.dynamicSwagger.refreshSwaggerDoc();
+
       return {
         success: true,
         message: `테이블 [${fullTableName}]에 컬럼 [${colName}]이 추가되었습니다.`,

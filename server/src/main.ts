@@ -20,7 +20,7 @@ async function bootstrap() {
   const baseDocument = SwaggerModule.createDocument(app, config);
 
   const dynamicSwaggerService = app.get(DynamicSwaggerService);
-  dynamicSwaggerService.setupSwagger(app, baseDocument);
+  await dynamicSwaggerService.setupSwagger(app, baseDocument);
 
   const port = process.env.PORT || 3000;
 

@@ -1,9 +1,7 @@
 export interface ColumnMeta {
   name: string;
-  type: string;
-  isPrimary?: boolean;
-  isNullable?: boolean;
-  defaultValue?: any;
+  type: "string" | "number" | "boolean" | "datetime" | "text";
+  isRequired?: boolean;
   description?: string;
 }
 

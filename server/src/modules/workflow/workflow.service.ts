@@ -77,7 +77,7 @@ export class WorkflowService {
 
   async executeWorkflow(
     payload: WorkflowPayload,
-    clientContext: Record<string, any>,
+    clientContext: Record<string, any> = {},
   ) {
     const { projectId, actions } = payload;
 

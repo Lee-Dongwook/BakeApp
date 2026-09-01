@@ -1,15 +1,9 @@
-import { Module, Global } from "@nestjs/common";
-import { SchemaRegistryService } from "./schema-registry.service";
+import { Module } from "@nestjs/common";
 import { DynamicSwaggerService } from "./dynamic-swagger.service";
-import { DynamicSchemaService } from "../dynamic-schema/dynamic-schema.service";
+import { SchemaRegistryService } from "./schema-registry.service";
 
-@Global()
 @Module({
-  providers: [
-    SchemaRegistryService,
-    DynamicSwaggerService,
-    DynamicSchemaService,
-  ],
-  exports: [SchemaRegistryService, DynamicSwaggerService, DynamicSchemaService],
+  providers: [SchemaRegistryService, DynamicSwaggerService],
+  exports: [SchemaRegistryService, DynamicSwaggerService],
 })
 export class SchemaModule {}
