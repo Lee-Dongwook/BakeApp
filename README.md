@@ -1,52 +1,145 @@
-# 🍞 BakeApp Engine (Backend Core)
+# 🍞 BakeApp Studio
 
-> **BakeApp**은 비전공자도 코딩 없이 GUI만으로 풀스택 웹과 모바일 앱(iOS/Android)을 갓 구워내듯(Bake) 손쉽게 제작할 수 있도록 지원하는 노코드(No-Code) 앱 빌더의 핵심 백엔드 엔진입니다.
+BakeApp Studio는 Supabase/PostgreSQL 기반 내부 업무 도구를 시각적으로 설계하는 노코드 앱 빌더 프로토타입입니다. 로그인한 사용자가 프로젝트를 만들고, 화면을 편집하며, 프로젝트별 테이블과 데이터를 연결할 수 있습니다.
 
----
+## 현재 구현 범위
 
-## 📸 Key Features
+- **인증과 프로젝트**
+  - Supabase 이메일/비밀번호 로그인과 브라우저 세션 확인
+  - 프로젝트 생성·조회·이름 변경·삭제
+  - `owner`, `editor`, `viewer` 멤버 역할
+- **프로젝트 저장**
+  - 페이지 AST와 API 정의를 프로젝트 문서(JSONB)로 저장·복원
+  - 변경됨 표시와 1초 디바운스 자동 저장
+- **화면 편집**
+  - `View`, `Text`, `Button`, `TextInput`, `Data List` 드래그 앤 드롭
+  - 페이지 추가·삭제, 속성·스타일 편집, 미리보기
+- **데이터**
+  - 프로젝트별 PostgreSQL 테이블·컬럼 생성
+  - 테이블/컬럼 목록, 최근 레코드 5건 미리보기, 동적 레코드 등록
+  - `Data List`가 미리보기 모드에서 테이블 레코드를 표시
+- **기존 엔진**
+  - 동적 CRUD API, 워크플로우 실행기, React/React Native 코드 생성, Swagger
 
-- **Dynamic Schema Migration (동적 DDL 엔진)**: 비전공자가 GUI에서 데이터베이스 구조를 변경하면 PostgreSQL DB에 테이블(`CREATE TABLE`)과 컬럼(`ALTER TABLE`)을 동적으로 반영합니다.
-- **Dynamic Data Engine (동적 CRUD API)**: 생성된 동적 테이블에 대해 파라미터화된 쿼리를 사용하여 SQL Injection 없이 안전한 CRUD(Create, Read, Update, Delete) API를 즉시 제공합니다.
-- **Multi-Platform Code Generator (UI 컴파일러)**: 빌더에서 생성된 표준 JSON AST(Abstract Syntax Tree)를 해석하여 **React Native (.tsx)** 및 **React Web (.tsx)** 소스 코드로 각각 컴파일합니다.
-- **OpenAPI / Swagger 지원**: 개발 및 테스트를 손쉽게 진행할 수 있도록 모든 API 스펙을 대화형 Swagger UI로 자동 제공합니다.
+## 기술 스택
 
----
+- Frontend: React, TypeScript, Vite, Zustand, Tailwind CSS
+- Backend: NestJS, TypeScript
+- Database/Auth: Supabase (PostgreSQL, Auth, RLS)
+- Database access: `pg`, `@supabase/supabase-js`
 
-## 🛠 Tech Stack
+## 시작하기
 
-- **Framework**: Node.js, NestJS (TypeScript)
-- **Database**: Supabase (PostgreSQL)
-- **Database Client**: `pg` (Direct Connection for Dynamic DDL), `@supabase/supabase-js`
-- **Runner / Compiler**: `tsx`, `nodemon`
-- **Documentation**: Swagger (`@nestjs/swagger`)
+### 1. 의존성 설치
 
----
+```bash
+pnpm install
+pnpm --dir server install
+```
 
-## 📁 Architecture Overview
+### 2. 환경 변수 설정
+
+`server/.env` 파일을 만들고 실제 비밀값은 저장소에 커밋하지 마세요.
+
+```env
+DATABASE_URL=your_postgresql_connection_string
+SUPABASE_URL=https://your-project.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+PORT=3000
+```
+
+프론트가 다른 서버 주소를 사용해야 하면 루트에 `.env.local`을 만들 수 있습니다.
+
+```env
+VITE_API_BASE_URL=http://localhost:3000
+```
+
+### 3. 데이터베이스 마이그레이션
+
+Supabase SQL Editor 또는 사용하는 PostgreSQL 마이그레이션 도구에서 아래 파일을 **순서대로 한 번씩** 실행합니다.
+
+1. `server/migrations/20260901_create_projects.sql`
+2. `server/migrations/20260901_create_project_documents.sql`
+3. `server/migrations/20260901_create_project_members.sql`
+
+이 마이그레이션은 `projects`, `project_documents`, `project_members` 테이블과 RLS 정책을 생성합니다.
+
+### 4. 개발 서버 실행
+
+```bash
+pnpm dev
+```
+
+- Frontend: Vite가 출력하는 주소(기본값 `http://localhost:5173`)
+- Backend / Swagger: `http://localhost:3000/api`
+
+## 사용 흐름
+
+1. Supabase Auth에 가입한 이메일과 비밀번호로 로그인합니다.
+2. 프로젝트 대시보드에서 예: `재고 관리` 프로젝트를 만듭니다.
+3. 빌더에서 **DB Builder**를 열고 예: `products` 테이블과 `title`, `price` 컬럼을 만듭니다.
+4. DB Builder의 테이블을 선택해 레코드를 등록하고 미리보기로 확인합니다.
+5. 팔레트에서 **Data List**를 캔버스에 추가합니다.
+6. 속성 패널에서 테이블 이름(`products`)과 표시 컬럼(`title`)을 설정합니다.
+7. **Live Preview**에서 실제 레코드를 확인합니다. 편집 내용은 자동 저장됩니다.
+
+## 권한 기준
+
+| 역할   | 프로젝트/문서 조회 | 문서·테이블·레코드 변경 | 멤버 관리·프로젝트 삭제 |
+| ------ | ------------------ | ----------------------- | ----------------------- |
+| owner  | 가능               | 가능                    | 가능                    |
+| editor | 가능               | 가능                    | 불가                    |
+| viewer | 가능               | 불가                    | 불가                    |
+
+동적 스키마와 CRUD API는 인증 토큰 및 프로젝트 권한을 확인합니다. 다른 프로젝트 ID를 임의로 넣어도 접근할 수 없습니다.
+
+## 주요 API
+
+모든 프로젝트·동적 데이터 API는 `Authorization: Bearer <access-token>` 헤더가 필요합니다.
+
+| 목적                         | 메서드 / 경로                                                       |
+| ---------------------------- | ------------------------------------------------------------------- |
+| 프로젝트 생성·목록           | `POST`, `GET /api/projects`                                         |
+| 프로젝트 상세·이름 변경·삭제 | `GET`, `PATCH`, `DELETE /api/projects/:id`                          |
+| 편집 문서 조회·저장          | `GET`, `PUT /api/projects/:id/document`                             |
+| 멤버 조회·추가/역할 변경     | `GET`, `POST /api/projects/:id/members`                             |
+| 테이블 생성·컬럼 추가        | `POST /api/dynamic-schema/table`, `POST /api/dynamic-schema/column` |
+| 프로젝트 테이블 목록         | `GET /api/dynamic-schema/tables/:projectId`                         |
+| 동적 레코드 CRUD             | `/api/dynamic-data/:projectId/:tableName`                           |
+
+전체 API 명세는 Swagger에서 확인할 수 있습니다.
+
+## 검증 명령
+
+```bash
+pnpm build
+pnpm --dir server build
+```
+
+현재 자동화된 E2E 테스트는 아직 없습니다. 위의 “사용 흐름”을 따라 로그인, 프로젝트 생성, 테이블/레코드 생성, `Data List` 미리보기를 수동으로 확인할 수 있습니다.
+
+## 프로젝트 구조
 
 ```text
 bake/
-├── src/                     # React 기반 노코드 편집기
-│   ├── components/          # 캔버스, 팔레트, 속성 및 코드 미리보기 UI
-│   └── store/               # 편집기 상태 관리
+├── src/
+│   ├── components/          # 로그인, 프로젝트 대시보드, 캔버스, DB Builder
+│   └── store/               # 인증, 프로젝트, 편집 문서, 페이지/API 상태
 ├── server/
-│   ├── src/
-│   │   ├── config/
-│   │   │   └── supabase.service.ts
-│   │   ├── modules/
-│   │   │   ├── database/       # PostgreSQL 연결 및 트랜잭션
-│   │   │   ├── auth/           # 인증, RBAC 및 RLS
-│   │   │   ├── dynamic-schema/ # 동적 DDL 생성기
-│   │   │   ├── dynamic-data/   # 동적 CRUD 엔진
-│   │   │   ├── generator/      # React Native/Web 컴파일러
-│   │   │   ├── schema/         # 스키마 레지스트리 및 동적 Swagger
-│   │   │   └── workflow/       # 액션 워크플로우 실행기
-│   │   ├── app.module.ts
-│   │   └── main.ts
-│   ├── .env                 # 서버 환경변수 (Git 제외)
-│   ├── nodemon.json
-│   └── package.json
-├── package.json
-└── vite.config.ts
+│   ├── migrations/          # Supabase/PostgreSQL 마이그레이션 SQL
+│   └── src/modules/
+│       ├── auth/            # Supabase 인증과 권한 검증
+│       ├── project/         # 프로젝트, 멤버, 편집 문서
+│       ├── dynamic-schema/  # 프로젝트별 테이블/컬럼 생성 및 목록
+│       ├── dynamic-data/    # 프로젝트별 CRUD API
+│       ├── workflow/        # 워크플로우 실행
+│       └── generator/       # 코드 생성
+└── docs/                    # 제품 계획과 분석 문서
 ```
+
+## 다음 우선순위
+
+- `Data List`의 테이블·컬럼을 수동 입력 대신 선택 목록으로 설정
+- 폼 컴포넌트와 Create/Update/Delete 워크플로우 연결
+- API 정의와 워크플로우 편집 상태까지 프로젝트 문서로 완전 저장
+- Preview/Published 분리 및 웹 배포 파이프라인
