@@ -1,9 +1,7 @@
 import React from "react";
 import { useDroppable } from "@dnd-kit/core";
-import {
-  type ComponentNode,
-  useCanvasStore,
-} from "../store/useCanvasStore";
+import { type ComponentNode, useCanvasStore } from "../store/useCanvasStore";
+import { usePageStore } from "../store/usePageStore";
 import { useRuntimeStore } from "../store/useRuntimeStore";
 
 interface CanvasRendererProps {
@@ -11,17 +9,12 @@ interface CanvasRendererProps {
 }
 
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
-  const mode = useRuntimeStore((state) => state.mode);
-  const formState = useRuntimeStore((state) => state.formState);
-  const setFormField = useRuntimeStore((state) => state.setFormField);
-  const workflowResults = useRuntimeStore((state) => state.workflowResults);
-  const setWorkflowResult = useRuntimeStore(
-    (state) => state.setWorkflowResult,
-  );
-  const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
-  const setSelectedNodeId = useCanvasStore(
-    (state) => state.setSelectedNodeId,
-  );
+  const { mode, formState, setFormField, workflowResults, setWorkflowResult } =
+    useRuntimeStore();
+
+  const { selectedNodeId, setSelectedNodeId } = useCanvasStore();
+
+  const { setActivePage, pageParams } = usePageStore();
 
   const resolveDynamicValue = (val: string): string => {
     if (typeof val !== "string") return val;
@@ -30,6 +23,10 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
       const keys = path.split(".");
       if (keys[0] === "form") {
         return formState[keys[1]] ?? "";
+      }
+
+      if (keys[0] === "params") {
+        return pageParams[keys[1]] ?? "";
       }
 
       if (keys[0] === "steps" && keys[1] && keys[2]) {
@@ -63,6 +60,20 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
 
     const actions = node.props?.onClickWorkflow || [];
     for (const act of actions) {
+      if (act.type === "NAVIGATE_TO") {
+        const targetPageId = act.params?.targetPageId;
+        const rawParams = act.params?.params || {};
+
+        const parsedParams: Record<string, any> = {};
+        Object.keys(rawParams).forEach((key) => {
+          parsedParams[key] = resolveDynamicValue(rawParams[key]);
+        });
+        console.log(
+          `[Router] Navigating to page ${targetPageId} with params:`,
+          parsedParams,
+        );
+        setActivePage(targetPageId, parsedParams);
+      }
       if (act.type === "SHOW_ALERT") {
         const msg = resolveDynamicValue(
           act.params?.message || "처리되었습니다.",
