@@ -46,7 +46,7 @@ export const ComponentPalette: React.FC = () => {
   ];
 
   return (
-    <aside className="w-64 border-r border-slate-800 bg-slate-950 p-4">
+    <div className="h-full w-full bg-slate-950 p-4">
       <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
         Components
       </h3>
@@ -60,6 +60,6 @@ export const ComponentPalette: React.FC = () => {
           />
         ))}
       </div>
-    </aside>
+    </div>
   );
 };

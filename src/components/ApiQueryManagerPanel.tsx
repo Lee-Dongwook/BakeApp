@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useQueryStore, ApiQuery } from "../store/useQueryStore";
 import { Database, Plus, Play, Trash2, Code } from "lucide-react";
 
@@ -15,6 +15,17 @@ export const ApiQueryManagerPanel: React.FC = () => {
     "GET",
   );
   const [body, setBody] = useState("");
+
+  useEffect(() => {
+    if (
+      selectedQueryId &&
+      queries.some((query) => query.id === selectedQueryId)
+    ) {
+      return;
+    }
+
+    setSelectedQueryId(queries[0]?.id ?? null);
+  }, [queries, selectedQueryId]);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +49,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
   const activeResult = activeQuery ? queryResults[activeQuery.name] : null;
 
   return (
-    <div className="w-80 border-r border-slate-800 bg-slate-900 flex flex-col h-full text-slate-200">
+    <div className="flex h-full w-full flex-col bg-slate-900 text-slate-200">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800">
         <div className="flex items-center gap-2">
@@ -55,7 +66,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
         <div className="flex gap-2">
           <select
             value={method}
-            onChange={(e) => setMethod(e.target.value as any)}
+            onChange={(e) => setMethod(e.target.value as ApiQuery["method"])}
             className="px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-amber-400 font-bold"
           >
             <option value="GET">GET</option>
@@ -118,7 +129,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  runQuery(q.id);
+                  void runQuery(q.id).catch(() => undefined);
                 }}
                 className="p-1 hover:bg-slate-700 text-emerald-400 rounded transition"
                 title="테스트 실행"
@@ -149,7 +160,9 @@ export const ApiQueryManagerPanel: React.FC = () => {
           <pre className="flex-1 overflow-auto text-[10px] font-mono text-slate-300 bg-slate-900 p-2 rounded border border-slate-800">
             {activeResult.loading
               ? "호출 중..."
-              : JSON.stringify(activeResult.data, null, 2)}
+              : activeResult.error
+                ? `오류: ${activeResult.error}`
+                : JSON.stringify(activeResult.data, null, 2)}
           </pre>
         </div>
       )}

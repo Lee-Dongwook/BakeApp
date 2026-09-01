@@ -17,6 +17,9 @@ interface CodePreviewModalProps {
   onClose: () => void;
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
   isOpen,
   onClose,
@@ -35,7 +38,7 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
 
       try {
         const response = await axios.post(
-          `http://localhost:3000/api/generator/compile?target=${target}`,
+          `${API_BASE_URL}/api/generator/compile?target=${target}`,
           {
             pageName: activePage.name,
             ast: activePage.rootNode,

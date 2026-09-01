@@ -1,4 +1,4 @@
-import React, { act, useState } from "react";
+import React, { useState } from "react";
 import { usePageStore } from "../store/usePageStore";
 import { FileText, Plus, Trash2, Globe } from "lucide-react";
 
@@ -22,7 +22,7 @@ export const PageManagerPanel: React.FC = () => {
   };
 
   return (
-    <div className="w-64 border-r border-slate-800 bg-slate-900 flex flex-col h-full text-slate-200">
+    <div className="flex h-full w-full flex-col bg-slate-900 text-slate-200">
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-800">
         <div className="flex items-center gap-2">

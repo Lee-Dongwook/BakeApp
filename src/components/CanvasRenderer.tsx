@@ -9,6 +9,9 @@ interface CanvasRendererProps {
   node: ComponentNode | string;
 }
 
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
   const { mode, formState, setFormField, workflowResults, setWorkflowResult } =
     useRuntimeStore();
@@ -66,16 +69,19 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
   });
 
   const isSelected = mode === "EDIT" && selectedNodeId === node.id;
+  const actions = node.props?.onClickWorkflow || [];
 
   const handleClick = async (e: React.MouseEvent) => {
-    e.stopPropagation();
-
     if (mode === "EDIT") {
+      e.stopPropagation();
       setSelectedNodeId(node.id);
       return;
     }
 
-    const actions = node.props?.onClickWorkflow || [];
+    // 액션이 없는 자식은 이벤트를 부모 버튼/컨테이너로 전달한다.
+    if (actions.length === 0) return;
+
+    e.stopPropagation();
     for (const act of actions) {
       if (act.type === "NAVIGATE_TO") {
         const targetPageId = act.params?.targetPageId;
@@ -94,7 +100,11 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
       if (act.type === "RUN_QUERY") {
         const queryId = act.params?.queryId;
         if (queryId) {
-          await useQueryStore.getState().runQuery(queryId);
+          try {
+            await useQueryStore.getState().runQuery(queryId);
+          } catch (error) {
+            console.error("Query Workflow Error", error);
+          }
         }
       }
       if (act.type === "SHOW_ALERT") {
@@ -113,18 +123,19 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
             parsedData,
           );
 
-          const res = await fetch(
-            "http://localhost:3000/api/workflow/execute",
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                actionType: "DB_INSERT",
-                tableName: act.params?.tableName,
-                data: parsedData,
-              }),
-            },
-          );
+          const res = await fetch(`${API_BASE_URL}/api/workflow/execute`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              actionType: "DB_INSERT",
+              tableName: act.params?.tableName,
+              data: parsedData,
+            }),
+          });
+
+          if (!res.ok) {
+            throw new Error(`워크플로우 실행 실패 (${res.status})`);
+          }
 
           const resultData = await res.json();
           setWorkflowResult(act.id, resultData);

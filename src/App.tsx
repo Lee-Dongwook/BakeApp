@@ -12,6 +12,11 @@ import { PropertyInspector } from "./components/PropertyInspector";
 import { CodePreviewModal } from "./components/CodePreviewModal";
 import { DbSchemaBuilderModal } from "./components/DbSchemaBuilderModal";
 import { Header } from "./components/Header";
+import { PageManagerPanel } from "./components/PageManagerPanel";
+import { ApiQueryManagerPanel } from "./components/ApiQueryManagerPanel";
+import { Boxes, Database, Files } from "lucide-react";
+
+type SidebarTab = "COMPONENTS" | "PAGES" | "QUERIES";
 
 export default function App() {
   const activePage = usePageStore(selectActivePage);
@@ -22,6 +27,7 @@ export default function App() {
   );
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
 
   useEffect(() => {
     if (
@@ -143,7 +149,38 @@ export default function App() {
 
         {/* Workspace */}
         <div className="flex flex-1 overflow-hidden">
-          <ComponentPalette />
+          <aside className="flex w-80 shrink-0 flex-col border-r border-slate-800 bg-slate-950">
+            <nav
+              aria-label="빌더 도구"
+              className="grid grid-cols-3 border-b border-slate-800 p-2"
+            >
+              {([
+                ["COMPONENTS", "컴포넌트", Boxes],
+                ["PAGES", "페이지", Files],
+                ["QUERIES", "API", Database],
+              ] as const).map(([tab, label, Icon]) => (
+                <button
+                  key={tab}
+                  type="button"
+                  onClick={() => setSidebarTab(tab)}
+                  aria-pressed={sidebarTab === tab}
+                  className={`flex items-center justify-center gap-1 rounded px-2 py-2 text-xs transition ${
+                    sidebarTab === tab
+                      ? "bg-amber-500 text-slate-950"
+                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  <span>{label}</span>
+                </button>
+              ))}
+            </nav>
+            <div className="min-h-0 flex-1">
+              {sidebarTab === "COMPONENTS" && <ComponentPalette />}
+              {sidebarTab === "PAGES" && <PageManagerPanel />}
+              {sidebarTab === "QUERIES" && <ApiQueryManagerPanel />}
+            </div>
+          </aside>
 
           <main className="flex-1 bg-slate-900 p-8 flex items-center justify-center overflow-auto">
             <CanvasDroppable rootNode={activePage.rootNode} />
