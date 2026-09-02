@@ -35,6 +35,20 @@ export const findNodeById = (
   return null;
 };
 
+export const findParentNode = (
+  node: ComponentNode,
+  targetId: string,
+): ComponentNode | null => {
+  for (const child of node.children ?? []) {
+    if (typeof child !== "string") {
+      if (child.id === targetId) return node;
+      const parent = findParentNode(child, targetId);
+      if (parent) return parent;
+    }
+  }
+  return null;
+};
+
 export const addNodeToTree = (
   node: ComponentNode,
   parentId: string,
