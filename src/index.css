@@ -299,6 +299,97 @@
     background: #30363d;
   }
 
+  /* The editor stays a three-column workspace on desktop. On compact screens
+     panels become drawers so the canvas remains usable instead of collapsing. */
+  .workspace-mobile-tools,
+  .workspace-scrim {
+    display: none;
+  }
+
+  @media (max-width: 1023px) {
+    .workspace-layout {
+      position: relative;
+    }
+    .workspace-sidebar,
+    .workspace-inspector {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      z-index: 25;
+      width: min(20rem, calc(100vw - 3rem));
+      transition: transform 220ms ease, box-shadow 220ms ease;
+    }
+    .workspace-sidebar {
+      left: 0;
+      transform: translateX(-105%);
+      box-shadow: none;
+    }
+    .workspace-inspector {
+      right: 0;
+      transform: translateX(105%);
+      box-shadow: none;
+    }
+    .workspace-sidebar.is-open,
+    .workspace-inspector.is-open {
+      transform: translateX(0);
+      box-shadow: var(--shadow-raised);
+    }
+    .workspace-inspector > .app-inspector {
+      width: 100%;
+    }
+    .workspace-scrim {
+      display: block;
+      position: absolute;
+      inset: 0;
+      z-index: 20;
+      border: 0;
+      background: rgb(0 0 0 / 0.45);
+    }
+    .workspace-mobile-tools {
+      position: absolute;
+      top: var(--space-3);
+      left: var(--space-3);
+      z-index: 10;
+      display: flex;
+      gap: var(--space-2);
+    }
+    .workspace-tool-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-md);
+      background: var(--surface-raised);
+      color: var(--text-secondary);
+      padding: 7px 10px;
+      font-size: 0.75rem;
+      font-weight: 650;
+      box-shadow: 0 3px 10px rgb(0 0 0 / 0.22);
+    }
+    .workspace-tool-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--action-primary);
+    }
+  }
+
+  @media (max-width: 639px) {
+    .app-header-responsive {
+      grid-template-columns: minmax(0, 1fr) auto;
+    }
+    .app-header-center {
+      display: none;
+    }
+    .app-header-responsive .btn {
+      padding: var(--space-2);
+    }
+    .app-header-responsive .btn-success {
+      font-size: 0;
+    }
+    .app-header-responsive .btn-success svg {
+      margin: 0;
+    }
+  }
+
   .code-preview .token.comment,
   .code-preview .token.prolog,
   .code-preview .token.doctype,

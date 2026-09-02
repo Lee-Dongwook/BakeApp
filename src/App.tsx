@@ -17,7 +17,7 @@ import { Header } from "./components/Header";
 import { PageManagerPanel } from "./components/PageManagerPanel";
 import { ApiQueryManagerPanel } from "./components/ApiQueryManagerPanel";
 import { ToastContainer } from "./components/ToastContainer";
-import { Boxes, CircleHelp, Database, Files, Layers, X } from "lucide-react";
+import { Boxes, CircleHelp, Database, Files, Layers, SlidersHorizontal, X } from "lucide-react";
 import { LoginScreen } from "./components/LoginScreen";
 import { ProjectDashboard } from "./components/ProjectDashboard";
 import { useAuthStore } from "./store/useAuthStore";
@@ -53,6 +53,8 @@ export default function App() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
   const [isShortcutHelpOpen, setIsShortcutHelpOpen] = useState(false);
   const search = useSearch({ from: "/project/$projectId" });
   const navigate = useNavigate({ from: "/project/$projectId" });
@@ -248,8 +250,19 @@ export default function App() {
         />
 
         {/* Workspace */}
-        <div className="flex flex-1 overflow-hidden">
-          <aside className="app-sidebar flex w-80 shrink-0 flex-col border-r">
+        <div className="workspace-layout flex flex-1 overflow-hidden">
+          {(isMobileSidebarOpen || isMobileInspectorOpen) && (
+            <button
+              type="button"
+              className="workspace-scrim"
+              aria-label="열린 패널 닫기"
+              onClick={() => {
+                setIsMobileSidebarOpen(false);
+                setIsMobileInspectorOpen(false);
+              }}
+            />
+          )}
+          <aside className={`app-sidebar workspace-sidebar flex w-80 shrink-0 flex-col border-r ${isMobileSidebarOpen ? "is-open" : ""}`}>
             <nav
               aria-label="빌더 도구"
               className="grid grid-cols-4 border-b p-1.5 gap-1 bg-[var(--surface-sunken)]"
@@ -265,7 +278,10 @@ export default function App() {
                 <button
                   key={tab}
                   type="button"
-                  onClick={() => setSidebarTab(tab)}
+                  onClick={() => {
+                    setSidebarTab(tab);
+                    setIsMobileSidebarOpen(true);
+                  }}
                   aria-pressed={sidebarTab === tab}
                   className={`panel-tab flex flex-col items-center justify-center gap-1 px-1 py-2 text-[11px] ${
                     sidebarTab === tab ? "is-active font-bold" : ""
@@ -286,11 +302,41 @@ export default function App() {
             </div>
           </aside>
 
-          <main className="workspace flex flex-1 items-center justify-center overflow-auto p-8 lg:p-12">
+          <main className="workspace relative flex flex-1 items-center justify-center overflow-auto p-4 sm:p-8 lg:p-12">
+            <div className="workspace-mobile-tools lg:hidden">
+              <button
+                type="button"
+                className="workspace-tool-btn"
+                onClick={() => {
+                  setIsMobileInspectorOpen(false);
+                  setIsMobileSidebarOpen((open) => !open);
+                }}
+                aria-label="도구 패널 열기"
+                aria-expanded={isMobileSidebarOpen}
+              >
+                <Boxes className="h-4 w-4" />
+                <span>도구</span>
+              </button>
+              <button
+                type="button"
+                className="workspace-tool-btn"
+                onClick={() => {
+                  setIsMobileSidebarOpen(false);
+                  setIsMobileInspectorOpen((open) => !open);
+                }}
+                aria-label="속성 패널 열기"
+                aria-expanded={isMobileInspectorOpen}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                <span>속성</span>
+              </button>
+            </div>
             <CanvasDroppable rootNode={activePage.rootNode} />
           </main>
 
-          <PropertyInspector />
+          <div className={`workspace-inspector ${isMobileInspectorOpen ? "is-open" : ""}`}>
+            <PropertyInspector />
+          </div>
         </div>
       </div>
 

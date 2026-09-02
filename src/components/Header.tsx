@@ -105,7 +105,7 @@ export const Header: React.FC<HeaderProps> = ({
   ];
 
   return (
-    <header className="app-header grid h-16 shrink-0 grid-cols-[auto_1fr_auto] items-center border-b px-4 sm:px-6 gap-4">
+    <header className="app-header app-header-responsive grid h-16 shrink-0 grid-cols-[auto_1fr_auto] items-center border-b px-3 sm:px-6 gap-2 sm:gap-4">
       {/* Left: Project title & Back button */}
       <div className="flex min-w-0 items-center gap-3">
         <button
@@ -114,16 +114,16 @@ export const Header: React.FC<HeaderProps> = ({
           className="text-muted flex items-center gap-1 text-xs hover:text-white transition"
           title="프로젝트 목록으로 돌아가기"
         >
-          <ChevronLeft className="h-4 w-4" /> 프로젝트
+          <ChevronLeft className="h-4 w-4" /> <span className="hidden sm:inline">프로젝트</span>
         </button>
         <div className="min-w-0 border-l border-[var(--border-subtle)] pl-3">
           <h1 className="truncate text-sm font-semibold">{projectName}</h1>
-          <p className="text-muted text-[10px]">BakeApp Studio</p>
+          <p className="text-muted hidden text-[10px] sm:block">BakeApp Studio</p>
         </div>
 
         {/* Undo / Redo controls */}
         {mode === "EDIT" && (
-          <div className="flex items-center gap-1 border-l border-[var(--border-subtle)] pl-3">
+          <div className="hidden sm:flex items-center gap-1 border-l border-[var(--border-subtle)] pl-3">
             <button
               type="button"
               onClick={undo}
@@ -147,7 +147,7 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       {/* Center: Mode switcher and Viewport/Zoom controls */}
-      <div className="flex items-center justify-center gap-3">
+      <div className="app-header-center flex items-center justify-center gap-3">
         <div className="segmented">
           <button
             type="button"
@@ -300,7 +300,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="btn btn-primary text-xs"
         >
           <Code2 className="h-3.5 w-3.5" />
-          <span>미리보기 · 코드</span>
+          <span className="hidden sm:inline">미리보기 · 코드</span>
         </button>
       </div>
     </header>
