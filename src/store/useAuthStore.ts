@@ -1,7 +1,6 @@
 import { create } from "zustand";
 import { apiClient } from "../api/client";
-
-const ACCESS_TOKEN_KEY = "bakeapp.accessToken";
+import { tokenStorage } from "../auth/tokenStorage";
 
 export interface AuthUser {
   id: string;
@@ -25,7 +24,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   initialize: async () => {
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+    const accessToken = tokenStorage.get();
     if (!accessToken) {
       set({ isInitializing: false });
       return;
@@ -37,7 +36,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       });
       set({ user: data.user, accessToken, isInitializing: false, error: null });
     } catch {
-      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      tokenStorage.clear();
       set({ user: null, accessToken: null, isInitializing: false });
     }
   },
@@ -55,7 +54,7 @@ export const useAuthStore = create<AuthState>((set) => ({
         throw new Error(message);
       }
 
-      localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+      tokenStorage.set(data.accessToken);
       set({ user: data.user, accessToken: data.accessToken, error: null });
     } catch (error) {
       const message =
@@ -66,7 +65,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   },
 
   signOut: () => {
-    localStorage.removeItem(ACCESS_TOKEN_KEY);
+    tokenStorage.clear();
     set({ user: null, accessToken: null, error: null });
   },
 }));

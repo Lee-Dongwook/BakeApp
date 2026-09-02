@@ -1,6 +1,6 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-const ACCESS_TOKEN_KEY = "bakeapp.accessToken";
+import { tokenStorage } from "../auth/tokenStorage";
 
 export interface ApiRequestOptions extends Omit<
   RequestInit,
@@ -67,7 +67,7 @@ class ApiClient {
     }
 
     if (auth) {
-      const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const accessToken = tokenStorage.get();
       if (!accessToken) throw new Error("로그인이 필요합니다.");
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
