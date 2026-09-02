@@ -2,8 +2,6 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
-import { DynamicRlsService } from "../auth/dynamic-rls.service";
-import { TablePolicyDefinition } from "../auth/interfaces/rbac-policy.interface";
 
 export interface ColumnDefinition {
   name: string;
@@ -26,7 +24,6 @@ export class DynamicSchemaService {
     private readonly dbService: DatabaseService,
     private readonly schemaRegistry: SchemaRegistryService,
     private readonly dynamicSwagger: DynamicSwaggerService,
-    private readonly dynamicRls: DynamicRlsService,
   ) {}
 
   private mapToPgType(type: string): string {
@@ -103,7 +100,6 @@ export class DynamicSchemaService {
     projectId: string,
     rawTableName: string,
     columns: ColumnDefinition[],
-    rbacPolicy?: Omit<TablePolicyDefinition, "tableName">,
   ) {
     const cleanProjectId = projectId.replace(/-/g, "_");
     const cleanTableName = this.sanitizeIdentifier(rawTableName);
@@ -123,37 +119,10 @@ export class DynamicSchemaService {
     sql += `,\n  "created_at" TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP\n`;
     sql += `);`;
 
-    const enableRlsSql = `ALTER TABLE "${fullTableName}" ENABLE ROW LEVEL SECURITY;`;
-    const createPolicySql = `
-      DO $$
-      BEGIN
-        IF NOT EXISTS (
-          SELECT 1 FROM pg_policies
-          WHERE tablename = '${fullTableName}' AND policyname = 'Tenant Isolation Policy'
-        ) THEN
-          CREATE POLICY "Tenant Isolation Policy" ON "${fullTableName}" FOR ALL USING (true);
-        END IF;
-      END $$;
-    `;
-
     try {
       await this.dbService.runInTransaction(async (client) => {
         await client.query(sql);
-        await client.query(enableRlsSql);
-        if (!rbacPolicy) {
-          await client.query(createPolicySql);
-        }
       });
-
-      if (rbacPolicy) {
-        await this.dynamicRls.applyTableRlsPolicy(projectId, {
-          tableName: cleanTableName,
-          readRoles: [...rbacPolicy.readRoles],
-          writeRoles: [...rbacPolicy.writeRoles],
-          deleteRoles: [...rbacPolicy.deleteRoles],
-          ownerOnly: rbacPolicy.ownerOnly,
-        });
-      }
 
       this.schemaRegistry.saveSchema(projectId, {
         tableName: cleanTableName,
@@ -165,7 +134,7 @@ export class DynamicSchemaService {
       return {
         success: true,
         tableName: fullTableName,
-        message: `테이블 [${fullTableName}]이 성공적으로 생성되었습니다. 또한, RLS 보안 정책이 성공적으로 생성되었습니다.`,
+        message: `테이블 [${fullTableName}]이 생성되었습니다. 접근 권한은 BakeApp 백엔드에서 프로젝트 멤버 역할로 관리합니다.`,
       };
     } catch (error) {
       if (error instanceof Error) {

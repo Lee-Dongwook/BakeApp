@@ -4,7 +4,6 @@ import {
   DynamicSchemaService,
   ColumnDefinition,
 } from "./dynamic-schema.service";
-import { TablePolicyDefinition } from "../auth/interfaces/rbac-policy.interface";
 import { AuthGuard } from "../auth/auth.guard";
 import { ProjectService } from "../project/project.service";
 
@@ -12,7 +11,6 @@ class CreateTableDto {
   projectId: string;
   tableName: string;
   columns: ColumnDefinition[];
-  rbacPolicy?: Omit<TablePolicyDefinition, "tableName">;
 }
 
 class AddColumnDto {
@@ -53,7 +51,6 @@ export class DynamicSchemaController {
       dto.projectId,
       dto.tableName,
       dto.columns,
-      dto.rbacPolicy,
     );
   }
 

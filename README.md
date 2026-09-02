@@ -64,8 +64,21 @@ PostgreSQL 클라이언트 또는 사용하는 PostgreSQL 마이그레이션 도
 2. `server/migrations/20260901_create_projects.sql`
 3. `server/migrations/20260901_create_project_documents.sql`
 4. `server/migrations/20260901_create_project_members.sql`
+5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql` (기존 설치 환경만)
 
 이 마이그레이션은 `users`, `projects`, `project_documents`, `project_members` 테이블을 생성합니다. 프로젝트 권한은 Supabase RLS가 아닌 백엔드의 인증 가드와 프로젝트 권한 검사로 처리합니다.
+
+### Docker로 전체 백엔드 실행
+
+PostgreSQL을 로컬에 설치하거나 `DATABASE_URL`을 직접 구성하지 않아도 됩니다.
+
+```bash
+docker compose up --build
+```
+
+Compose는 PostgreSQL, API, 마이그레이션 초기화를 함께 실행합니다. API는 `http://localhost:3000/api`에서 사용할 수 있고, DB 데이터는 Docker 볼륨 `postgres-data`에 보관됩니다.
+
+기본 계정 정보와 JWT 키는 **개발용**입니다. 운영 환경에서는 `POSTGRES_PASSWORD`, `DATABASE_URL`, `JWT_SECRET`을 안전한 배포 환경의 시크릿으로 설정하세요. 초기화 SQL은 빈 볼륨에서만 실행되므로, 이미 생성된 DB에는 새 마이그레이션을 별도로 적용해야 합니다.
 
 ### 4. 개발 서버 실행
 
