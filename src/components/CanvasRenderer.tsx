@@ -6,6 +6,7 @@ import { useRuntimeStore } from "../store/useRuntimeStore";
 import { useQueryStore } from "../store/useQueryStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useProjectStore } from "../store/useProjectStore";
+import { useWorkflowExecutor } from "../hooks/useWorkflowExecutor";
 import { apiClient } from "../api/client";
 
 interface CanvasRendererProps {
@@ -19,6 +20,52 @@ interface DataListRendererProps {
   onClick: (event: React.MouseEvent) => void;
 }
 
+const resolveDynamicValue = (
+  val: string,
+  context: {
+    formState: Record<string, any>;
+    pageParams: Record<string, any>;
+    queryResults: Record<string, any>;
+    workflowResults: Record<string, any>;
+  },
+): string => {
+  if (typeof val !== "string") return val;
+
+  return val.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) => {
+    const keys = path.split(".");
+    const [domain, firstKey, secondKey] = keys;
+
+    if (domain === "form") return context.formState[firstKey] ?? "";
+    if (domain === "params") return context.pageParams[firstKey] ?? "";
+
+    if (domain === "queries") {
+      const resultObj = context.queryResults[firstKey];
+      if (!resultObj) return "";
+
+      const target = keys
+        .slice(2)
+        .reduce<unknown>(
+          (acc, k) =>
+            acc && typeof acc === "object"
+              ? (acc as Record<string, unknown>)[k]
+              : undefined,
+          resultObj,
+        );
+
+      if (target === undefined || target === null) return "";
+      return typeof target === "object"
+        ? JSON.stringify(target)
+        : String(target);
+    }
+
+    if (domain === "steps" && firstKey && secondKey) {
+      return context.workflowResults[firstKey]?.[secondKey] ?? "";
+    }
+
+    return "";
+  });
+};
+
 const DataListRenderer: React.FC<DataListRendererProps> = ({
   node,
   mode,
@@ -30,39 +77,38 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
   const [records, setRecords] = useState<Record<string, unknown>[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+
   const tableName = String(node.props?.tableName || "").trim();
   const displayField = String(node.props?.displayField || "").trim();
 
   useEffect(() => {
     if (mode !== "PREVIEW" || !projectId || !accessToken || !tableName) return;
 
-    let isCurrent = true;
+    const controller = new AbortController();
     setIsLoading(true);
     setError(null);
+
     apiClient
       .get<{ data: Record<string, unknown>[] }>(
         `/api/dynamic-data/${projectId}/${tableName}?limit=20`,
         { auth: true },
       )
-      .then((data) => {
-        if (isCurrent) setRecords(data.data);
-      })
+      .then((data) => setRecords(data.data))
       .catch((fetchError) => {
-        if (isCurrent) {
-          setError(
-            fetchError instanceof Error
-              ? fetchError.message
-              : "데이터를 불러오지 못했습니다.",
-          );
-        }
+        if (fetchError.name === "AbortError") return;
+        setError(
+          fetchError instanceof Error
+            ? fetchError.message
+            : "데이터를 불러오지 못했습니다.",
+        );
       })
       .finally(() => {
-        if (isCurrent) setIsLoading(false);
+        if (!controller.signal.aborted) {
+          setIsLoading(false);
+        }
       });
 
-    return () => {
-      isCurrent = false;
-    };
+    return () => controller.abort();
   }, [accessToken, mode, projectId, tableName]);
 
   if (mode === "EDIT") {
@@ -111,52 +157,24 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
 };
 
 export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
-  const { mode, formState, setFormField, workflowResults, setWorkflowResult } =
-    useRuntimeStore();
-
+  const { mode, formState, setFormField, workflowResults } = useRuntimeStore();
   const { selectedNodeId, setSelectedNodeId } = useCanvasStore();
-
-  const { setActivePage, pageParams } = usePageStore();
+  const { pageParams } = usePageStore();
   const { queryResults } = useQueryStore();
+  const activeProjectId = useProjectStore((state) => state.activeProject?.id);
 
-  const resolveDynamicValue = (val: string): string => {
-    if (typeof val !== "string") return val;
+  const { executeWorkflow } = useWorkflowExecutor();
 
-    return val.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_, path: string) => {
-      const keys = path.split(".");
-      if (keys[0] === "form") return formState[keys[1]] ?? "";
-      if (keys[0] === "params") return pageParams[keys[1]] ?? "";
-
-      if (keys[0] === "queries") {
-        const queryName = keys[1];
-        const resultObj = queryResults[queryName];
-        if (!resultObj) return "";
-
-        const subPaths = keys.slice(2);
-
-        const target = subPaths.reduce<unknown>((acc, key) => {
-          if (acc !== null && typeof acc === "object") {
-            return (acc as Record<string, unknown>)[key];
-          }
-        }, resultObj);
-
-        if (target === undefined || target === null) return "";
-
-        return typeof target === "object"
-          ? JSON.stringify(target)
-          : String(target);
-      }
-
-      if (keys[0] === "steps" && keys[1] && keys[2]) {
-        return workflowResults[keys[1]]?.[keys[2]] ?? "";
-      }
-
-      return "";
+  const resolveText = (text: string) =>
+    resolveDynamicValue(text, {
+      formState,
+      pageParams,
+      queryResults,
+      workflowResults,
     });
-  };
 
   if (typeof node === "string") {
-    return <span>{resolveDynamicValue(node)}</span>;
+    return <span>{resolveText(node)}</span>;
   }
 
   const isContainer = node.type === "Container" || node.type === "View";
@@ -176,66 +194,18 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
       return;
     }
 
-    // 액션이 없는 자식은 이벤트를 부모 버튼/컨테이너로 전달한다.
     if (actions.length === 0) return;
-
     e.stopPropagation();
-    for (const act of actions) {
-      if (act.type === "NAVIGATE_TO") {
-        const targetPageId = act.params?.targetPageId;
-        const rawParams = act.params?.params || {};
 
-        const parsedParams: Record<string, any> = {};
-        Object.keys(rawParams).forEach((key) => {
-          parsedParams[key] = resolveDynamicValue(rawParams[key]);
-        });
-        console.log(
-          `[Router] Navigating to page ${targetPageId} with params:`,
-          parsedParams,
-        );
-        setActivePage(targetPageId, parsedParams);
-      }
-      if (act.type === "RUN_QUERY") {
-        const queryId = act.params?.queryId;
-        if (queryId) {
-          try {
-            await useQueryStore.getState().runQuery(queryId);
-          } catch (error) {
-            console.error("Query Workflow Error", error);
-          }
-        }
-      }
-      if (act.type === "SHOW_ALERT") {
-        const msg = resolveDynamicValue(
-          act.params?.message || "처리되었습니다.",
-        );
-        alert(msg);
-      } else if (act.type === "DB_INSERT") {
-        try {
-          const parsedData = JSON.parse(
-            resolveDynamicValue(JSON.stringify(act.params?.data || {})),
-          );
+    const projectId =
+      activeProjectId || localStorage.getItem("currentProjectId") || "";
 
-          console.log(
-            `[Workflow Executing] DB Insert -> Table: ${act.params?.tableName}`,
-            parsedData,
-          );
-
-          const resultData = await apiClient.post<Record<string, unknown>>(
-            "/api/workflow/execute",
-            {
-              actionType: "DB_INSERT",
-              tableName: act.params?.tableName,
-              data: parsedData,
-            },
-            { auth: true },
-          );
-          setWorkflowResult(act.id, resultData);
-        } catch (error) {
-          console.error("Workflow Execution Error", error);
-        }
-      }
-    }
+    await executeWorkflow({
+      projectId,
+      trigger: "ON_CLICK",
+      actions,
+      formState,
+    });
   };
 
   const selectionStyle = isSelected
