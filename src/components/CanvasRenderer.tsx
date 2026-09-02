@@ -6,13 +6,11 @@ import { useRuntimeStore } from "../store/useRuntimeStore";
 import { useQueryStore } from "../store/useQueryStore";
 import { useAuthStore } from "../store/useAuthStore";
 import { useProjectStore } from "../store/useProjectStore";
+import { apiClient } from "../api/client";
 
 interface CanvasRendererProps {
   node: ComponentNode | string;
 }
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 interface DataListRendererProps {
   node: ComponentNode;
@@ -41,20 +39,20 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
     let isCurrent = true;
     setIsLoading(true);
     setError(null);
-    fetch(`${API_BASE_URL}/api/dynamic-data/${projectId}/${tableName}?limit=20`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("데이터를 불러오지 못했습니다.");
-        return response.json() as Promise<{ data: Record<string, unknown>[] }>;
-      })
+    apiClient
+      .get<{ data: Record<string, unknown>[] }>(
+        `/api/dynamic-data/${projectId}/${tableName}?limit=20`,
+        { auth: true },
+      )
       .then((data) => {
         if (isCurrent) setRecords(data.data);
       })
       .catch((fetchError) => {
         if (isCurrent) {
           setError(
-            fetchError instanceof Error ? fetchError.message : "데이터를 불러오지 못했습니다.",
+            fetchError instanceof Error
+              ? fetchError.message
+              : "데이터를 불러오지 못했습니다.",
           );
         }
       })
@@ -75,13 +73,21 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
         className={`cursor-pointer text-xs text-slate-500 ${className}`}
       >
         <p className="font-semibold text-slate-700">Data List</p>
-        <p className="mt-1">{tableName ? `${tableName} 테이블` : "속성 패널에서 테이블을 선택하세요."}</p>
+        <p className="mt-1">
+          {tableName
+            ? `${tableName} 테이블`
+            : "속성 패널에서 테이블을 선택하세요."}
+        </p>
       </div>
     );
   }
 
   return (
-    <div onClick={onClick} style={node.style as React.CSSProperties} className={className}>
+    <div
+      onClick={onClick}
+      style={node.style as React.CSSProperties}
+      className={className}
+    >
       {isLoading ? (
         <p className="text-sm text-slate-500">데이터를 불러오는 중…</p>
       ) : error ? (
@@ -91,7 +97,10 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
       ) : (
         <ul className="space-y-2">
           {records.map((record, index) => (
-            <li key={String(record.id ?? index)} className="rounded bg-white px-3 py-2 text-sm shadow-sm">
+            <li
+              key={String(record.id ?? index)}
+              className="rounded bg-white px-3 py-2 text-sm shadow-sm"
+            >
               {String(record[displayField] ?? record.id ?? "")}
             </li>
           ))}
@@ -212,21 +221,15 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
             parsedData,
           );
 
-          const res = await fetch(`${API_BASE_URL}/api/workflow/execute`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
+          const resultData = await apiClient.post<Record<string, unknown>>(
+            "/api/workflow/execute",
+            {
               actionType: "DB_INSERT",
               tableName: act.params?.tableName,
               data: parsedData,
-            }),
-          });
-
-          if (!res.ok) {
-            throw new Error(`워크플로우 실행 실패 (${res.status})`);
-          }
-
-          const resultData = await res.json();
+            },
+            { auth: true },
+          );
           setWorkflowResult(act.id, resultData);
         } catch (error) {
           console.error("Workflow Execution Error", error);

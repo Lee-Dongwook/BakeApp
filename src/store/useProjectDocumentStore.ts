@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { useAuthStore } from "./useAuthStore";
+import { apiClient } from "../api/client";
 import { usePageStore } from "./usePageStore";
 import type { Page } from "./usePageStore";
 import { useQueryStore } from "./useQueryStore";
@@ -8,12 +8,6 @@ import {
   getEditorRevision,
   subscribeToEditorChanges,
 } from "./editorChangeTracker";
-
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-
-interface ApiError {
-  message?: string | string[];
-}
 
 interface ProjectDocumentState {
   isLoading: boolean;
@@ -26,12 +20,6 @@ interface ProjectDocumentState {
   save: (projectId: string) => Promise<void>;
 }
 
-const readErrorMessage = async (response: Response) => {
-  const data = (await response.json().catch(() => null)) as ApiError | null;
-  const message = data?.message;
-  return Array.isArray(message) ? message.join(", ") : message || "저장에 실패했습니다.";
-};
-
 export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
   isLoading: false,
   isSaving: false,
@@ -41,22 +29,14 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
   markDirty: () => set({ isDirty: true }),
 
   load: async (projectId) => {
-    const accessToken = useAuthStore.getState().accessToken;
-    if (!accessToken) return;
-
     set({ isLoading: true, error: null, lastSavedAt: null, isDirty: false });
     usePageStore.getState().resetPages();
     useQueryStore.getState().resetQueries();
     try {
-      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/document`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
-      if (!response.ok) throw new Error(await readErrorMessage(response));
-
-      const savedDocument = (await response.json()) as {
+      const savedDocument = await apiClient.get<{
         document?: { pages?: unknown; queries?: unknown };
         updatedAt?: string | null;
-      };
+      }>(`/api/projects/${projectId}/document`, { auth: true });
       const pages = savedDocument.document?.pages;
       const queries = savedDocument.document?.queries;
 
@@ -81,41 +61,23 @@ export const useProjectDocumentStore = create<ProjectDocumentState>((set) => ({
   },
 
   save: async (projectId) => {
-    const accessToken = useAuthStore.getState().accessToken;
-    if (!accessToken) {
-      const error = "로그인이 필요합니다.";
-      set({ error });
-      throw new Error(error);
-    }
-
     const { pages } = usePageStore.getState();
     const { queries } = useQueryStore.getState();
     const revisionAtSaveStart = getEditorRevision();
     set({ isSaving: true, error: null });
 
     try {
-      const existingResponse = await fetch(
-        `${API_BASE_URL}/api/projects/${projectId}/document`,
-        { headers: { Authorization: `Bearer ${accessToken}` } },
-      );
-      if (!existingResponse.ok) {
-        throw new Error(await readErrorMessage(existingResponse));
-      }
-      const existing = (await existingResponse.json()) as {
+      const existing = await apiClient.get<{
         document?: Record<string, unknown>;
-      };
+      }>(`/api/projects/${projectId}/document`, { auth: true });
 
-      const response = await fetch(`${API_BASE_URL}/api/projects/${projectId}/document`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`,
-        },
-        body: JSON.stringify({
+      await apiClient.put(
+        `/api/projects/${projectId}/document`,
+        {
           document: { ...existing.document, pages, queries },
-        }),
-      });
-      if (!response.ok) throw new Error(await readErrorMessage(response));
+        },
+        { auth: true },
+      );
 
       set({
         isSaving: false,

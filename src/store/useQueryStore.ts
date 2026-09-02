@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import axios from "axios";
+import { apiClient } from "../api/client";
 import { useRuntimeStore } from "./useRuntimeStore";
 import { usePageStore } from "./usePageStore";
 import { notifyEditorChanged } from "./editorChangeTracker";
@@ -40,7 +40,8 @@ export const useQueryStore = create<QueryState>((set, get) => ({
   queries: structuredClone(initialQueries),
   queryResults: {},
   replaceQueries: (queries) => set({ queries, queryResults: {} }),
-  resetQueries: () => set({ queries: structuredClone(initialQueries), queryResults: {} }),
+  resetQueries: () =>
+    set({ queries: structuredClone(initialQueries), queryResults: {} }),
   addQuery: (query) => {
     set((state) => ({ queries: [...state.queries, query] }));
     notifyEditorChanged();
@@ -87,21 +88,20 @@ export const useQueryStore = create<QueryState>((set, get) => ({
     const resolvedBody = query.body ? resolveParams(query.body) : undefined;
 
     try {
-      const response = await axios({
-        url: resolvedUrl,
+      const response = await apiClient.request<unknown>(resolvedUrl, {
         method: query.method,
         headers: query.headers,
-        data: resolvedBody ? JSON.parse(resolvedBody) : undefined,
+        body: resolvedBody ? JSON.parse(resolvedBody) : undefined,
       });
 
       set((state) => ({
         queryResults: {
           ...state.queryResults,
-          [query.name]: { data: response.data, loading: false, error: null },
+          [query.name]: { data: response, loading: false, error: null },
         },
       }));
 
-      return response.data;
+      return response;
     } catch (error: any) {
       console.error(`[Query Error] ${query.name}:`, error);
       set((state) => ({

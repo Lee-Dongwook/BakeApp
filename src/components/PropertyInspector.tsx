@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from "react";
 import { findNodeById, useCanvasStore } from "../store/useCanvasStore";
 import { selectActivePage, usePageStore } from "../store/usePageStore";
+import { useProjectStore } from "../store/useProjectStore";
 import { Plus, Sliders, Trash2, Type as TypeIcon, X, Zap } from "lucide-react";
-import type { ColumnMeta, TableMeta } from "../api/schema";
+import type { TableMeta } from "../api/schema";
+import { apiClient } from "../api/client";
 
 type WorkflowActionType = "DB_INSERT" | "SHOW_ALERT";
 
@@ -23,6 +25,7 @@ export const PropertyInspector: React.FC = () => {
   const deleteNode = usePageStore((state) => state.deleteNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useCanvasStore((state) => state.setSelectedNodeId);
+  const projectId = useProjectStore((state) => state.activeProject?.id);
 
   const [activeTab, setActiveTab] = useState<"STYLE" | "WORKFLOW">("STYLE");
   const [tables, setTables] = useState<TableMeta[]>([]);
@@ -30,20 +33,15 @@ export const PropertyInspector: React.FC = () => {
 
   useEffect(() => {
     const fetchSchema = async () => {
-      const projectId = localStorage.getItem("currentProjectId");
-      const token = localStorage.getItem("accessToken");
-
-      if (!projectId || !token) return;
+      if (!projectId) return;
 
       try {
         setLoadingSchema(true);
-        const res = await fetch(`/api/dynamic-schema/tables/${projectId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setTables(data);
-        }
+        const data = await apiClient.get<TableMeta[]>(
+          `/api/dynamic-schema/tables/${projectId}`,
+          { auth: true },
+        );
+        setTables(data);
       } catch (err) {
         console.error("Schema fetch failed:", err);
       } finally {
@@ -52,7 +50,7 @@ export const PropertyInspector: React.FC = () => {
     };
 
     fetchSchema();
-  }, []);
+  }, [projectId]);
 
   if (!activePage || !selectedNodeId) {
     return (

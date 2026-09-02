@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useAuthStore } from "../store/useAuthStore";
+import { apiClient } from "../api/client";
 
 interface ColumnInput {
   name: string;
@@ -8,10 +8,6 @@ interface ColumnInput {
 }
 
 type UserRole = "GUEST" | "MEMBER" | "ADMIN";
-
-interface ErrorResponse {
-  message?: string | string[];
-}
 
 interface ProjectTable {
   name: string;
@@ -54,33 +50,24 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   const [recordsError, setRecordsError] = useState<string | null>(null);
   const [recordForm, setRecordForm] = useState<Record<string, string>>({});
   const [isCreatingRecord, setIsCreatingRecord] = useState(false);
-  const [recordCreateError, setRecordCreateError] = useState<string | null>(null);
+  const [recordCreateError, setRecordCreateError] = useState<string | null>(
+    null,
+  );
 
   const loadTables = async () => {
-    const accessToken = useAuthStore.getState().accessToken;
-    if (!accessToken) return;
-
     setIsTablesLoading(true);
     setTablesError(null);
     try {
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await fetch(
-        `${apiBaseUrl}/api/dynamic-schema/tables/${projectId}`,
-        { headers: { Authorization: `Bearer ${accessToken}` } },
+      const data = await apiClient.get<ProjectTable[]>(
+        `/api/dynamic-schema/tables/${projectId}`,
+        { auth: true },
       );
-      const data = (await response.json()) as ProjectTable[] | ErrorResponse;
-      if (!response.ok) {
-        const errorMessage = (data as ErrorResponse).message;
-        const message = Array.isArray(errorMessage)
-          ? errorMessage.join(", ")
-          : errorMessage;
-        throw new Error(message || "테이블 목록을 불러오지 못했습니다.");
-      }
-      setTables(data as ProjectTable[]);
+      setTables(data);
     } catch (error) {
       setTablesError(
-        error instanceof Error ? error.message : "테이블 목록을 불러오지 못했습니다.",
+        error instanceof Error
+          ? error.message
+          : "테이블 목록을 불러오지 못했습니다.",
       );
     } finally {
       setIsTablesLoading(false);
@@ -96,36 +83,22 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   }, [isOpen, projectId]);
 
   const loadRecords = async (tableName: string) => {
-    const accessToken = useAuthStore.getState().accessToken;
-    if (!accessToken) return;
-
     setSelectedTable(tableName);
     setRecordForm({});
     setRecordCreateError(null);
     setIsRecordsLoading(true);
     setRecordsError(null);
     try {
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await fetch(
-        `${apiBaseUrl}/api/dynamic-data/${projectId}/${tableName}?limit=5`,
-        { headers: { Authorization: `Bearer ${accessToken}` } },
+      const data = await apiClient.get<{ data: Record<string, unknown>[] }>(
+        `/api/dynamic-data/${projectId}/${tableName}?limit=5`,
+        { auth: true },
       );
-      const data = (await response.json()) as
-        | { data: Record<string, unknown>[] }
-        | ErrorResponse;
-      if (!response.ok) {
-        const errorMessage = (data as ErrorResponse).message;
-        throw new Error(
-          Array.isArray(errorMessage)
-            ? errorMessage.join(", ")
-            : errorMessage || "레코드를 불러오지 못했습니다.",
-        );
-      }
-      setRecords((data as { data: Record<string, unknown>[] }).data);
+      setRecords(data.data);
     } catch (error) {
       setRecordsError(
-        error instanceof Error ? error.message : "레코드를 불러오지 못했습니다.",
+        error instanceof Error
+          ? error.message
+          : "레코드를 불러오지 못했습니다.",
       );
     } finally {
       setIsRecordsLoading(false);
@@ -148,13 +121,13 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
       return;
     }
 
-    const accessToken = useAuthStore.getState().accessToken;
-    if (!accessToken) return;
-
     const payload = Object.fromEntries(
       Object.entries(recordForm)
         .filter(([, value]) => value !== "")
-        .map(([key, value]) => [key, value === "true" ? true : value === "false" ? false : value]),
+        .map(([key, value]) => [
+          key,
+          value === "true" ? true : value === "false" ? false : value,
+        ]),
     );
     if (Object.keys(payload).length === 0) {
       setRecordCreateError("저장할 값을 입력해 주세요.");
@@ -164,31 +137,18 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
     setIsCreatingRecord(true);
     setRecordCreateError(null);
     try {
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await fetch(
-        `${apiBaseUrl}/api/dynamic-data/${projectId}/${selectedTable}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify(payload),
-        },
+      await apiClient.post(
+        `/api/dynamic-data/${projectId}/${selectedTable}`,
+        payload,
+        { auth: true },
       );
-      const data = (await response.json()) as ErrorResponse;
-      if (!response.ok) {
-        const message = Array.isArray(data.message)
-          ? data.message.join(", ")
-          : data.message;
-        throw new Error(message || "레코드를 저장하지 못했습니다.");
-      }
       setRecordForm({});
       await loadRecords(selectedTable);
     } catch (error) {
       setRecordCreateError(
-        error instanceof Error ? error.message : "레코드를 저장하지 못했습니다.",
+        error instanceof Error
+          ? error.message
+          : "레코드를 저장하지 못했습니다.",
       );
     } finally {
       setIsCreatingRecord(false);
@@ -198,10 +158,7 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
   if (!isOpen) return null;
 
   const handleAddColumn = () => {
-    setColumns([
-      ...columns,
-      { name: "", type: "string", isRequired: false },
-    ]);
+    setColumns([...columns, { name: "", type: "string", isRequired: false }]);
   };
 
   const handleRemoveColumn = (index: number) => {
@@ -228,50 +185,28 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
     setIsLoading(true);
 
     try {
-      const accessToken = useAuthStore.getState().accessToken;
-      if (!accessToken) {
-        throw new Error("로그인이 필요합니다.");
-      }
-      const apiBaseUrl =
-        import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
-      const response = await fetch(
-        `${apiBaseUrl}/api/dynamic-schema/table`,
+      await apiClient.post(
+        "/api/dynamic-schema/table",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
+          projectId,
+          tableName,
+          columns,
+          rbacPolicy: {
+            readRoles,
+            writeRoles,
+            deleteRoles: ["ADMIN"],
           },
-          body: JSON.stringify({
-            projectId,
-            tableName,
-            columns,
-            rbacPolicy: {
-              readRoles,
-              writeRoles,
-              deleteRoles: ["ADMIN"],
-            },
-          }),
         },
+        { auth: true },
       );
-
-      const data = (await response.json()) as ErrorResponse;
-
-      if (response.ok) {
-        alert(
-          `테이블 [${tableName}]이 생성되고 Swagger 스펙과 RLS 권한이 등록되었습니다.`,
-        );
-        setTableName("");
-        setColumns([{ name: "title", type: "string", isRequired: true }]);
-        setReadRoles(["MEMBER", "ADMIN"]);
-        setWriteRoles(["ADMIN"]);
-        onClose();
-      } else {
-        const message = Array.isArray(data.message)
-          ? data.message.join(", ")
-          : data.message;
-        alert(`생성 실패: ${message || "오류가 발생했습니다."}`);
-      }
+      alert(
+        `테이블 [${tableName}]이 생성되고 Swagger 스펙과 RLS 권한이 등록되었습니다.`,
+      );
+      setTableName("");
+      setColumns([{ name: "title", type: "string", isRequired: true }]);
+      setReadRoles(["MEMBER", "ADMIN"]);
+      setWriteRoles(["ADMIN"]);
+      onClose();
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "알 수 없는 오류";
@@ -505,7 +440,9 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
           {tablesError ? (
             <p className="text-xs text-rose-600">{tablesError}</p>
           ) : tables.length === 0 ? (
-            <p className="text-xs text-slate-500">아직 생성된 테이블이 없습니다.</p>
+            <p className="text-xs text-slate-500">
+              아직 생성된 테이블이 없습니다.
+            </p>
           ) : (
             <ul className="max-h-32 space-y-2 overflow-y-auto">
               {tables.map((table) => (
@@ -519,7 +456,9 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
                         : "border-slate-200 bg-white hover:border-amber-300"
                     }`}
                   >
-                    <p className="text-xs font-bold text-slate-800">{table.name}</p>
+                    <p className="text-xs font-bold text-slate-800">
+                      {table.name}
+                    </p>
                     <p className="mt-1 text-[11px] text-slate-500">
                       {table.columns.length === 0
                         ? "사용자 정의 컬럼 없음"
@@ -544,12 +483,21 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
                 if (!selectedTableDefinition?.columns.length) return null;
 
                 return (
-                  <form onSubmit={handleCreateRecord} className="mb-4 rounded border border-slate-200 bg-white p-3">
-                    <h5 className="mb-2 text-xs font-bold text-slate-700">새 레코드 추가</h5>
+                  <form
+                    onSubmit={handleCreateRecord}
+                    className="mb-4 rounded border border-slate-200 bg-white p-3"
+                  >
+                    <h5 className="mb-2 text-xs font-bold text-slate-700">
+                      새 레코드 추가
+                    </h5>
                     <div className="grid gap-2 sm:grid-cols-2">
                       {selectedTableDefinition.columns.map((column) => (
-                        <label key={column.name} className="text-[11px] font-medium text-slate-600">
-                          {column.name}{column.isRequired ? " *" : ""}
+                        <label
+                          key={column.name}
+                          className="text-[11px] font-medium text-slate-600"
+                        >
+                          {column.name}
+                          {column.isRequired ? " *" : ""}
                           {column.dataType === "boolean" ? (
                             <select
                               value={recordForm[column.name] ?? ""}
@@ -567,7 +515,11 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
                             </select>
                           ) : (
                             <input
-                              type={column.dataType === "numeric" ? "number" : "text"}
+                              type={
+                                column.dataType === "numeric"
+                                  ? "number"
+                                  : "text"
+                              }
                               value={recordForm[column.name] ?? ""}
                               onChange={(event) =>
                                 setRecordForm((current) => ({
@@ -582,7 +534,11 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
                         </label>
                       ))}
                     </div>
-                    {recordCreateError && <p className="mt-2 text-xs text-rose-600">{recordCreateError}</p>}
+                    {recordCreateError && (
+                      <p className="mt-2 text-xs text-rose-600">
+                        {recordCreateError}
+                      </p>
+                    )}
                     <button
                       type="submit"
                       disabled={isCreatingRecord}
@@ -601,22 +557,32 @@ export const DbSchemaBuilderModal: React.FC<DbSchemaBuilderModalProps> = ({
               ) : recordsError ? (
                 <p className="text-xs text-rose-600">{recordsError}</p>
               ) : records.length === 0 ? (
-                <p className="text-xs text-slate-500">등록된 레코드가 없습니다.</p>
+                <p className="text-xs text-slate-500">
+                  등록된 레코드가 없습니다.
+                </p>
               ) : (
                 <div className="overflow-x-auto rounded border border-slate-200 bg-white">
                   <table className="min-w-full text-left text-[11px]">
                     <thead className="bg-slate-100 text-slate-600">
                       <tr>
                         {Object.keys(records[0]).map((key) => (
-                          <th key={key} className="px-2 py-1.5 font-semibold">{key}</th>
+                          <th key={key} className="px-2 py-1.5 font-semibold">
+                            {key}
+                          </th>
                         ))}
                       </tr>
                     </thead>
                     <tbody>
                       {records.map((record, index) => (
-                        <tr key={String(record.id ?? index)} className="border-t border-slate-100">
+                        <tr
+                          key={String(record.id ?? index)}
+                          className="border-t border-slate-100"
+                        >
                           {Object.keys(records[0]).map((key) => (
-                            <td key={key} className="max-w-36 truncate px-2 py-1.5 text-slate-700">
+                            <td
+                              key={key}
+                              className="max-w-36 truncate px-2 py-1.5 text-slate-700"
+                            >
                               {typeof record[key] === "object"
                                 ? JSON.stringify(record[key])
                                 : String(record[key] ?? "")}

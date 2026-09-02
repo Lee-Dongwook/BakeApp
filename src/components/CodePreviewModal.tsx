@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import axios from "axios";
+import { apiClient } from "../api/client";
 import { selectActivePage, usePageStore } from "../store/usePageStore";
 import { generateReactCode } from "../utils/codeGenerator";
 import {
@@ -16,9 +16,6 @@ interface CodePreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
   isOpen,
@@ -37,14 +34,14 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
       setLoading(true);
 
       try {
-        const response = await axios.post(
-          `${API_BASE_URL}/api/generator/compile?target=${target}`,
+        const response = await apiClient.post<{ code: string }>(
+          `/api/generator/compile?target=${target}`,
           {
             pageName: activePage.name,
             ast: activePage.rootNode,
           },
         );
-        setCode(response.data.code);
+        setCode(response.code);
       } catch (error) {
         console.warn(
           "백엔드 컴파일러 연결 실패 - 클라이언트 로컬 변환기로 전환합니다:",

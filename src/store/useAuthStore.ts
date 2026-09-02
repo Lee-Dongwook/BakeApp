@@ -1,6 +1,6 @@
 import { create } from "zustand";
+import { apiClient } from "../api/client";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 const ACCESS_TOKEN_KEY = "bakeapp.accessToken";
 
 export interface AuthUser {
@@ -18,16 +18,6 @@ interface AuthState {
   signOut: () => void;
 }
 
-interface ApiError {
-  message?: string | string[];
-}
-
-const readErrorMessage = async (response: Response) => {
-  const data = (await response.json().catch(() => null)) as ApiError | null;
-  const message = data?.message;
-  return Array.isArray(message) ? message.join(", ") : message || "요청에 실패했습니다.";
-};
-
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
   accessToken: null,
@@ -42,12 +32,9 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/me`, {
-        headers: { Authorization: `Bearer ${accessToken}` },
+      const data = await apiClient.get<{ user: AuthUser }>("/api/auth/me", {
+        auth: true,
       });
-      if (!response.ok) throw new Error(await readErrorMessage(response));
-
-      const data = (await response.json()) as { user: AuthUser };
       set({ user: data.user, accessToken, isInitializing: false, error: null });
     } catch {
       localStorage.removeItem(ACCESS_TOKEN_KEY);
@@ -57,30 +44,25 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (email, password) => {
     set({ error: null });
-    const response = await fetch(`${API_BASE_URL}/api/auth/signin`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, password }),
-    });
+    try {
+      const data = await apiClient.post<{
+        accessToken?: string;
+        user: AuthUser;
+      }>("/api/auth/signin", { email, password });
+      if (!data.accessToken) {
+        const message = "로그인 토큰을 받지 못했습니다.";
+        set({ error: message });
+        throw new Error(message);
+      }
 
-    if (!response.ok) {
-      const message = await readErrorMessage(response);
+      localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
+      set({ user: data.user, accessToken: data.accessToken, error: null });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "로그인에 실패했습니다.";
       set({ error: message });
       throw new Error(message);
     }
-
-    const data = (await response.json()) as {
-      accessToken?: string;
-      user: AuthUser;
-    };
-    if (!data.accessToken) {
-      const message = "로그인 토큰을 받지 못했습니다.";
-      set({ error: message });
-      throw new Error(message);
-    }
-
-    localStorage.setItem(ACCESS_TOKEN_KEY, data.accessToken);
-    set({ user: data.user, accessToken: data.accessToken, error: null });
   },
 
   signOut: () => {
