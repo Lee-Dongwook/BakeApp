@@ -49,11 +49,11 @@ export const ApiQueryManagerPanel: React.FC = () => {
   const activeResult = activeQuery ? queryResults[activeQuery.name] : null;
 
   return (
-    <div className="flex h-full w-full flex-col bg-slate-900 text-slate-200">
+    <div className="app-sidebar flex h-full w-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-800">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
-          <Database className="w-4 h-4 text-amber-400" />
+          <Database className="brand h-4 w-4" />
           <h3 className="font-bold text-sm">API Query Manager</h3>
         </div>
       </div>
@@ -61,13 +61,13 @@ export const ApiQueryManagerPanel: React.FC = () => {
       {/* Query Generator Form */}
       <form
         onSubmit={handleCreate}
-        className="p-3 border-b border-slate-800 space-y-2 bg-slate-950/40"
+        className="space-y-2 border-b bg-[var(--surface-inset)] p-3"
       >
         <div className="flex gap-2">
           <select
             value={method}
             onChange={(e) => setMethod(e.target.value as ApiQuery["method"])}
-            className="px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-amber-400 font-bold"
+            className="control w-auto py-1 text-xs font-bold text-amber-400"
           >
             <option value="GET">GET</option>
             <option value="POST">POST</option>
@@ -79,7 +79,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
             placeholder="Query Name (예: getUsers)"
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="flex-1 px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500"
+            className="control flex-1 py-1 text-xs"
           />
         </div>
         <input
@@ -87,7 +87,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
           placeholder="URL (예: https://api.com/users?email={{ form.email }})"
           value={url}
           onChange={(e) => setUrl(e.target.value)}
-          className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500 font-mono"
+          className="control py-1 font-mono text-xs"
         />
         {method !== "GET" && (
           <textarea
@@ -95,13 +95,10 @@ export const ApiQueryManagerPanel: React.FC = () => {
             value={body}
             onChange={(e) => setBody(e.target.value)}
             rows={2}
-            className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white font-mono focus:outline-none focus:border-amber-500"
+            className="control py-1 font-mono text-xs"
           />
         )}
-        <button
-          type="submit"
-          className="w-full py-1 text-xs bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded transition flex items-center justify-center gap-1"
-        >
+        <button type="submit" className="btn btn-primary w-full py-1 text-xs">
           <Plus className="w-3.5 h-3.5" /> Query 생성
         </button>
       </form>
@@ -112,14 +109,12 @@ export const ApiQueryManagerPanel: React.FC = () => {
           <div
             key={q.id}
             onClick={() => setSelectedQueryId(q.id)}
-            className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer transition ${
-              q.id === selectedQueryId
-                ? "bg-slate-800 border border-slate-700 text-amber-400"
-                : "hover:bg-slate-800/50 text-slate-400"
+            className={`list-item flex cursor-pointer items-center justify-between px-3 py-2 text-xs ${
+              q.id === selectedQueryId ? "is-active" : ""
             }`}
           >
             <div className="truncate flex items-center gap-2">
-              <span className="font-bold text-[10px] px-1.5 py-0.5 rounded bg-slate-950 text-amber-500 border border-slate-800">
+              <span className="badge px-1.5 py-0.5 text-[10px] font-bold">
                 {q.method}
               </span>
               <span className="font-mono font-medium">{q.name}</span>
@@ -131,7 +126,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
                   e.stopPropagation();
                   void runQuery(q.id).catch(() => undefined);
                 }}
-                className="p-1 hover:bg-slate-700 text-emerald-400 rounded transition"
+                className="icon-btn text-emerald-400"
                 title="테스트 실행"
               >
                 <Play className="w-3.5 h-3.5" />
@@ -141,7 +136,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
                   e.stopPropagation();
                   deleteQuery(q.id);
                 }}
-                className="p-1 hover:bg-slate-700 text-red-400 rounded transition"
+                className="icon-btn text-red-400"
               >
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
@@ -152,12 +147,12 @@ export const ApiQueryManagerPanel: React.FC = () => {
 
       {/* Live Result Preview */}
       {activeResult && (
-        <div className="border-t border-slate-800 p-3 bg-slate-950 h-40 flex flex-col">
-          <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 mb-1">
-            <Code className="w-3.5 h-3.5 text-amber-500" />
+        <div className="flex h-40 flex-col border-t bg-[var(--surface-inset)] p-3">
+          <div className="text-secondary mb-1 flex items-center gap-1 text-[11px] font-bold">
+            <Code className="brand h-3.5 w-3.5" />
             <span>Result: queries.{activeQuery?.name}.data</span>
           </div>
-          <pre className="flex-1 overflow-auto text-[10px] font-mono text-slate-300 bg-slate-900 p-2 rounded border border-slate-800">
+          <pre className="surface-inset text-secondary flex-1 overflow-auto p-2 font-mono text-[10px]">
             {activeResult.loading
               ? "호출 중..."
               : activeResult.error

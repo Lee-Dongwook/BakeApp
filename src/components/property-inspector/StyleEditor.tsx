@@ -7,8 +7,7 @@ interface StyleEditorProps extends SelectedNodeEditorProps {
   loadingSchema: boolean;
 }
 
-const controlClassName =
-  "w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500";
+const controlClassName = "control text-xs";
 
 export function StyleEditor({
   page,
@@ -39,7 +38,7 @@ export function StyleEditor({
     <>
       {isTextType && (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-400 flex items-center space-x-1">
+          <label className="field-label flex items-center space-x-1">
             <TypeIcon className="w-3.5 h-3.5" />
             <span>텍스트 내용</span>
           </label>
@@ -56,9 +55,7 @@ export function StyleEditor({
 
       {node.type === "TextInput" && (
         <div className="space-y-2">
-          <label className="text-xs font-medium text-slate-400">
-            Placeholder (안내 문구)
-          </label>
+          <label className="field-label">Placeholder (안내 문구)</label>
           <input
             type="text"
             value={node.props?.placeholder || ""}
@@ -104,7 +101,7 @@ export function StyleEditor({
       )}
 
       <div className="space-y-4">
-        <div className="flex items-center space-x-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+        <div className="eyebrow flex items-center space-x-1">
           <span>Visual Controls</span>
         </div>
         <ColorField
@@ -157,7 +154,7 @@ function SelectField({
 }>) {
   return (
     <div className="space-y-1">
-      <label className="text-xs font-medium text-slate-400">{label}</label>
+      <label className="field-label">{label}</label>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
@@ -183,19 +180,19 @@ function ColorField({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs text-slate-400">{label}</label>
+      <label className="field-label">{label}</label>
       <div className="flex items-center space-x-2">
         <input
           type="color"
           value={value || fallback}
           onChange={(event) => onChange(event.target.value)}
-          className="w-7 h-7 bg-transparent rounded cursor-pointer border-0"
+          className="h-7 w-7 cursor-pointer rounded border-0 bg-transparent"
         />
         <input
           type="text"
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          className="flex-1 bg-slate-900 border border-slate-800 rounded px-2.5 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500"
+          className="control flex-1 py-1 font-mono text-xs"
         />
       </div>
     </div>
@@ -213,7 +210,7 @@ function NumberField({
 }) {
   return (
     <div className="space-y-1">
-      <label className="text-xs text-slate-400">{label}</label>
+      <label className="field-label">{label}</label>
       <input
         type="number"
         value={value}

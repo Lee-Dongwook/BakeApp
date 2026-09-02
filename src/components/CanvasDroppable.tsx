@@ -17,8 +17,8 @@ export const CanvasDroppable: React.FC<CanvasDroppableProps> = ({
   return (
     <div
       ref={setNodeRef}
-      className={`w-[375px] h-[667px] bg-white rounded-[32px] border-[8px] border-slate-800 shadow-2xl overflow-hidden relative text-slate-900 flex flex-col transition-colors ${
-        isOver ? "ring-4 ring-amber-500/50" : ""
+      className={`relative flex h-[667px] w-[375px] flex-col overflow-hidden rounded-[32px] border-[8px] bg-white text-slate-900 shadow-2xl transition-colors ${
+        isOver ? "ring-4 ring-amber-500/50" : "border-[var(--border-strong)]"
       }`}
     >
       <CanvasRenderer node={rootNode} />

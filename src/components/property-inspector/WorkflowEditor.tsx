@@ -6,8 +6,7 @@ interface WorkflowEditorProps {
   onSave: (actions: WorkflowAction[]) => void;
 }
 
-const inputClassName =
-  "w-full bg-slate-950 border border-slate-800 rounded px-2 py-1 text-xs text-slate-200 font-mono focus:outline-none focus:border-amber-500";
+const inputClassName = "control py-1 font-mono text-xs";
 
 export function WorkflowEditor({ actions, onSave }: WorkflowEditorProps) {
   const addAction = (type: WorkflowActionType) =>
@@ -24,9 +23,7 @@ export function WorkflowEditor({ actions, onSave }: WorkflowEditorProps) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-400 uppercase tracking-wider">
-          On-Click Actions
-        </span>
+        <span className="eyebrow">On-Click Actions</span>
         <div className="flex gap-1">
           <AddButton
             label="DB 생성"
@@ -37,7 +34,7 @@ export function WorkflowEditor({ actions, onSave }: WorkflowEditorProps) {
         </div>
       </div>
       {actions.length === 0 ? (
-        <div className="text-center py-8 text-xs text-slate-500 border border-dashed border-slate-800 rounded-lg">
+        <div className="text-muted rounded-lg border border-dashed py-8 text-center text-xs">
           클릭 시 실행할 워크플로우 액션을 추가하세요
         </div>
       ) : (
@@ -93,8 +90,8 @@ function AddButton({
       onClick={onClick}
       className={
         emphasized
-          ? "flex items-center gap-1 px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 rounded text-[11px] font-medium transition"
-          : "flex items-center gap-1 px-2 py-1 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 rounded text-[11px] font-medium transition"
+          ? "btn border-amber-500/30 bg-amber-500/10 px-2 py-1 text-[11px] text-amber-400 hover:bg-amber-500/20"
+          : "btn btn-secondary px-2 py-1 text-[11px]"
       }
     >
       <Plus className="w-3 h-3" /> {label}
@@ -116,24 +113,22 @@ function ActionCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-lg p-3 relative space-y-2">
+    <div className="surface relative space-y-2 p-3">
       <div className="flex items-center justify-between">
-        <span className="font-mono text-[10px] bg-slate-800 px-2 py-0.5 rounded text-amber-400 font-semibold">
+        <span className="badge px-2 py-0.5 text-[10px] font-semibold">
           Step {index + 1}: {action.type}
         </span>
         <button
           type="button"
           onClick={onRemove}
-          className="text-slate-500 hover:text-red-400 transition"
+          className="text-muted transition hover:text-red-400"
         >
           <X className="w-3.5 h-3.5" />
         </button>
       </div>
       <ActionFields action={action} onUpdate={onUpdate} />
       {hasNext && (
-        <div className="text-center text-slate-600 font-bold text-xs pt-1">
-          ↓
-        </div>
+        <div className="text-muted pt-1 text-center text-xs font-bold">↓</div>
       )}
     </div>
   );
@@ -214,9 +209,7 @@ function Field({
 }: React.PropsWithChildren<{ label: string }>) {
   return (
     <div className="pt-1">
-      <label className="block text-[10px] text-slate-400 font-medium mb-1">
-        {label}
-      </label>
+      <label className="field-label mb-1 block text-[10px]">{label}</label>
       {children}
     </div>
   );

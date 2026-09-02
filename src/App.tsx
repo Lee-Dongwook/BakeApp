@@ -39,9 +39,7 @@ export default function App() {
   const activePage = usePageStore(selectActivePage);
   const addNode = usePageStore((state) => state.addNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
-  const setSelectedNodeId = useCanvasStore(
-    (state) => state.setSelectedNodeId,
-  );
+  const setSelectedNodeId = useCanvasStore((state) => state.setSelectedNodeId);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
@@ -188,7 +186,11 @@ export default function App() {
   };
 
   if (isInitializing) {
-    return <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">세션 확인 중…</div>;
+    return (
+      <div className="app-shell flex h-screen items-center justify-center text-secondary">
+        세션 확인 중…
+      </div>
+    );
   }
 
   if (!user) {
@@ -200,7 +202,11 @@ export default function App() {
   }
 
   if (isDocumentLoading) {
-    return <div className="flex h-screen items-center justify-center bg-slate-950 text-slate-300">프로젝트를 불러오는 중…</div>;
+    return (
+      <div className="app-shell flex h-screen items-center justify-center text-secondary">
+        프로젝트를 불러오는 중…
+      </div>
+    );
   }
 
   if (!activePage) {
@@ -209,7 +215,7 @@ export default function App() {
 
   return (
     <DndContext onDragEnd={handleDragEnd}>
-      <div className="flex h-screen w-screen flex-col bg-slate-900 text-white">
+      <div className="app-shell flex h-screen w-screen flex-col">
         <Header
           onOpenDbBuilder={() => setIsDbModalOpen(true)}
           onOpenCodePreview={() => setIsCodeModalOpen(true)}
@@ -224,25 +230,25 @@ export default function App() {
 
         {/* Workspace */}
         <div className="flex flex-1 overflow-hidden">
-          <aside className="flex w-80 shrink-0 flex-col border-r border-slate-800 bg-slate-950">
+          <aside className="app-sidebar flex w-80 shrink-0 flex-col border-r">
             <nav
               aria-label="빌더 도구"
-              className="grid grid-cols-3 border-b border-slate-800 p-2"
+              className="grid grid-cols-3 border-b p-2"
             >
-              {([
-                ["COMPONENTS", "컴포넌트", Boxes],
-                ["PAGES", "페이지", Files],
-                ["QUERIES", "API", Database],
-              ] as const).map(([tab, label, Icon]) => (
+              {(
+                [
+                  ["COMPONENTS", "컴포넌트", Boxes],
+                  ["PAGES", "페이지", Files],
+                  ["QUERIES", "API", Database],
+                ] as const
+              ).map(([tab, label, Icon]) => (
                 <button
                   key={tab}
                   type="button"
                   onClick={() => setSidebarTab(tab)}
                   aria-pressed={sidebarTab === tab}
-                  className={`flex items-center justify-center gap-1 rounded px-2 py-2 text-xs transition ${
-                    sidebarTab === tab
-                      ? "bg-amber-500 text-slate-950"
-                      : "text-slate-400 hover:bg-slate-800 hover:text-slate-100"
+                  className={`panel-tab flex items-center justify-center gap-1 px-2 py-2 text-xs ${
+                    sidebarTab === tab ? "is-active" : ""
                   }`}
                 >
                   <Icon className="h-3.5 w-3.5" />
@@ -257,7 +263,7 @@ export default function App() {
             </div>
           </aside>
 
-          <main className="flex-1 bg-slate-900 p-8 flex items-center justify-center overflow-auto">
+          <main className="workspace flex flex-1 items-center justify-center overflow-auto p-8">
             <CanvasDroppable rootNode={activePage.rootNode} />
           </main>
 

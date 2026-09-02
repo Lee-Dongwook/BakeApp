@@ -22,17 +22,17 @@ export const PageManagerPanel: React.FC = () => {
   };
 
   return (
-    <div className="flex h-full w-full flex-col bg-slate-900 text-slate-200">
+    <div className="app-sidebar flex h-full w-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-slate-800">
+      <div className="flex items-center justify-between border-b p-4">
         <div className="flex items-center gap-2">
-          <Globe className="w-4 h-4 text-amber-400" />
+          <Globe className="brand h-4 w-4" />
           <h3 className="font-bold text-sm">Pages Manager</h3>
         </div>
         <button
           type="button"
           onClick={() => setIsAdding(!isAdding)}
-          className="p-1 hover:bg-slate-800 rounded text-slate-400 hover:text-white transition"
+          className="icon-btn"
           title="새 페이지 추가"
         >
           <Plus className="w-4 h-4" />
@@ -42,33 +42,33 @@ export const PageManagerPanel: React.FC = () => {
       {isAdding && (
         <form
           onSubmit={handleCreatePage}
-          className="p-3 border-b border-slate-800 bg-slate-950/50 space-y-2"
+          className="space-y-2 border-b bg-[var(--surface-inset)] p-3"
         >
           <input
             type="text"
             placeholder="페이지 이름 (예: UserDetail)"
             value={newPageName}
             onChange={(e) => setNewPageName(e.target.value)}
-            className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500"
+            className="control py-1 text-xs"
           />
           <input
             type="text"
             placeholder="라우트 경로 (예: /users/:id)"
             value={newPagePath}
             onChange={(e) => setNewPagePath(e.target.value)}
-            className="w-full px-2 py-1 text-xs bg-slate-900 border border-slate-700 rounded text-white focus:outline-none focus:border-amber-500"
+            className="control py-1 text-xs"
           />
           <div className="flex justify-end gap-2 pt-1">
             <button
               type="button"
               onClick={() => setIsAdding(false)}
-              className="px-2 py-1 text-[11px] text-slate-400 hover:text-white"
+              className="text-muted px-2 py-1 text-[11px] hover:text-white"
             >
               취소
             </button>
             <button
               type="submit"
-              className="px-2.4 py-1 text-[11px] bg-amber-500 text-slate-950 font-bold rounded hover:bg-amber-400"
+              className="btn btn-primary px-2 py-1 text-[11px]"
             >
               생성
             </button>
@@ -84,17 +84,15 @@ export const PageManagerPanel: React.FC = () => {
             <div
               key={page.id}
               onClick={() => setActivePage(page.id)}
-              className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs cursor-pointer group transition ${
-                isActive
-                  ? "bg-amber-500/10 border border-amber-500/30 text-amber-400 font-semibold"
-                  : "hover:bg-slate-800/60 text-slate-400 hover:text-slate-200"
+              className={`list-item group flex cursor-pointer items-center justify-between px-3 py-2 text-xs ${
+                isActive ? "is-active font-semibold" : ""
               }`}
             >
               <div className="flex items-center gap-2 truncate">
                 <FileText className="w-3.5 h-3.5 shrink-0" />
                 <div className="truncate">
                   <div className="text-xs">{page.name}</div>
-                  <div className="text-2.5 text-slate-500 font-mono">
+                  <div className="text-muted font-mono text-[10px]">
                     {page.path}
                   </div>
                 </div>
@@ -106,7 +104,7 @@ export const PageManagerPanel: React.FC = () => {
                       e.stopPropagation();
                       deletePage(page.id);
                     }}
-                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-slate-700 text-slate-400 hover:text-red-400 rounded transition"
+                    className="icon-btn opacity-0 group-hover:opacity-100 hover:text-red-400"
                     title="페이지 삭제"
                   >
                     <Trash2 className="w-3.5 h-3.5" />

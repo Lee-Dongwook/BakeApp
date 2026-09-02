@@ -69,7 +69,7 @@ export const PropertyInspector = () => {
   };
 
   return (
-    <aside className="w-72 border-l border-slate-800 bg-slate-950 flex flex-col justify-between h-full">
+    <aside className="app-inspector flex h-full w-72 flex-col justify-between border-l">
       <div className="flex flex-col flex-1 overflow-hidden">
         <InspectorHeader
           nodeType={selectedNode.type}
@@ -81,7 +81,7 @@ export const PropertyInspector = () => {
           }}
         />
         <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
-        <div className="p-4 overflow-y-auto flex-1 space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto p-4">
           {activeTab === "STYLE" ? (
             <StyleEditor
               page={activePage}
@@ -97,8 +97,8 @@ export const PropertyInspector = () => {
           )}
         </div>
       </div>
-      <div className="p-4 border-t border-slate-800">
-        <span className="text-[10px] text-slate-600 font-mono block truncate">
+      <div className="border-t p-4">
+        <span className="text-muted block truncate font-mono text-[10px]">
           ID: {selectedNode.id}
         </span>
       </div>
@@ -108,11 +108,9 @@ export const PropertyInspector = () => {
 
 function EmptyInspector({ message }: { message: string }) {
   return (
-    <aside className="w-72 border-l border-slate-800 bg-slate-950 p-4">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-        Properties
-      </h3>
-      <div className="text-xs text-slate-500">{message}</div>
+    <aside className="app-inspector w-72 border-l p-4">
+      <h3 className="eyebrow mb-3">Properties</h3>
+      <div className="text-muted text-xs">{message}</div>
     </aside>
   );
 }
@@ -129,12 +127,10 @@ function InspectorHeader({
   onDelete: () => void;
 }) {
   return (
-    <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+    <div className="flex items-center justify-between border-b p-4">
       <div>
-        <span className="text-xs bg-amber-500/10 text-amber-500 font-mono px-2 py-0.5 rounded">
-          {nodeType}
-        </span>
-        <h2 className="text-sm font-semibold text-slate-200 mt-1">
+        <span className="badge px-2 py-0.5 text-xs">{nodeType}</span>
+        <h2 className="text-secondary mt-1 text-sm font-semibold">
           {nodeName}
         </h2>
       </div>
@@ -142,7 +138,7 @@ function InspectorHeader({
         <button
           type="button"
           onClick={onDelete}
-          className="p-1.5 hover:bg-red-500/20 text-slate-400 hover:text-red-400 rounded transition"
+          className="icon-btn hover:bg-red-500/20 hover:text-red-400"
           title="노드 삭제"
         >
           <Trash2 className="w-4 h-4" />
@@ -160,9 +156,9 @@ function TabSwitcher({
   onChange: (tab: InspectorTab) => void;
 }) {
   const buttonClassName = (tab: InspectorTab) =>
-    `flex-1 py-2 text-xs font-semibold flex items-center justify-center space-x-1.5 border-b-2 transition ${activeTab === tab ? "border-amber-500 text-amber-400 bg-slate-900" : "border-transparent text-slate-400 hover:text-slate-200"}`;
+    `inspector-tab flex flex-1 items-center justify-center space-x-1.5 py-2 text-xs font-semibold ${activeTab === tab ? "is-active" : ""}`;
   return (
-    <div className="flex border-b border-slate-800 bg-slate-900/50">
+    <div className="flex border-b bg-[var(--surface-inset)]">
       <button
         type="button"
         onClick={() => onChange("STYLE")}

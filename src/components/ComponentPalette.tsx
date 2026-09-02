@@ -19,12 +19,12 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`flex items-center space-x-2 p-3 bg-slate-900 border border-slate-800 rounded-lg cursor-grab hover:border-amber-500 transition select-none ${
-        isDragging ? "opacity-40 border-amber-500" : ""
+      className={`surface card-interactive flex cursor-grab items-center space-x-2 p-3 select-none ${
+        isDragging ? "opacity-40" : ""
       }`}
     >
-      <div className="text-amber-500">{icon}</div>
-      <span className="text-xs font-medium text-slate-200">{label}</span>
+      <div className="brand">{icon}</div>
+      <span className="text-secondary text-xs font-medium">{label}</span>
     </div>
   );
 };
@@ -51,10 +51,8 @@ export const ComponentPalette: React.FC = () => {
   ];
 
   return (
-    <div className="h-full w-full bg-slate-950 p-4">
-      <h3 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-3">
-        Components
-      </h3>
+    <div className="app-sidebar h-full w-full p-4">
+      <h3 className="eyebrow mb-3">Components</h3>
       <div className="grid grid-cols-2 gap-2">
         {items.map((item) => (
           <PaletteItem
