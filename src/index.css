@@ -298,4 +298,36 @@
     border-color: var(--action-primary);
     background: #30363d;
   }
+
+  .code-preview .token.comment,
+  .code-preview .token.prolog,
+  .code-preview .token.doctype,
+  .code-preview .token.cdata { color: #707b91; }
+  .code-preview .token.punctuation { color: #b8c0d2; }
+  .code-preview .token.property,
+  .code-preview .token.tag,
+  .code-preview .token.constant,
+  .code-preview .token.symbol,
+  .code-preview .token.deleted { color: #f28b9a; }
+  .code-preview .token.boolean,
+  .code-preview .token.number { color: #d4a5ff; }
+  .code-preview .token.selector,
+  .code-preview .token.attr-name,
+  .code-preview .token.string,
+  .code-preview .token.char,
+  .code-preview .token.builtin,
+  .code-preview .token.inserted { color: #9fdaa3; }
+  .code-preview .token.operator,
+  .code-preview .token.entity,
+  .code-preview .token.url,
+  .code-preview .language-css .token.string,
+  .code-preview .style .token.string { color: #e6bb7a; }
+  .code-preview .token.atrule,
+  .code-preview .token.attr-value,
+  .code-preview .token.keyword { color: #e6b07a; }
+  .code-preview .token.function,
+  .code-preview .token.class-name { color: #6db9ff; }
+  .code-preview .token.regex,
+  .code-preview .token.important,
+  .code-preview .token.variable { color: #f0d16b; }
 }

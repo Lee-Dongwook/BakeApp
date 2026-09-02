@@ -2,126 +2,139 @@ import { Injectable } from "@nestjs/common";
 
 export interface ComponentNode {
   type: string;
-  props?: Record<string, any>;
-  style?: Record<string, any>;
+  id?: string;
+  props?: Record<string, unknown>;
+  style?: Record<string, unknown>;
   children?: (ComponentNode | string)[];
+}
+
+type Target = "rn" | "react";
+
+interface GenerationContext {
+  imports: Set<string>;
+  usesFormState: boolean;
 }
 
 @Injectable()
 export class GeneratorService {
+  private styleAttribute(style: Record<string, unknown>) {
+    return Object.keys(style).length ? ` style={${JSON.stringify(style)}}` : "";
+  }
+
+  private textValue(value: string) {
+    return `{${JSON.stringify(value)}}`;
+  }
+
+  private renderChildren(
+    children: (ComponentNode | string)[],
+    target: Target,
+    context: GenerationContext,
+    depth: number,
+  ) {
+    if (!children.length) return "";
+    const indent = "  ".repeat(depth);
+    return `\n${children
+      .map((child) => this.renderNode(child, target, context, depth + 1))
+      .join("\n")}\n${indent}`;
+  }
+
   private renderNode(
     node: ComponentNode | string,
-    target: "rn" | "react",
-    imports: Set<string>,
-    indentDepth = 2,
+    target: Target,
+    context: GenerationContext,
+    depth = 2,
   ): string {
-    const indent = " ".repeat(indentDepth * 2);
+    const indent = "  ".repeat(depth);
+    if (typeof node === "string") return `${indent}${this.textValue(node)}`;
 
-    if (typeof node === "string") {
-      return `${indent}${node}`;
+    const style = node.style ?? {};
+    const props = node.props ?? {};
+    const children = node.children ?? [];
+    const styleAttribute = this.styleAttribute(style);
+
+    if (node.type === "Text") {
+      const tag = target === "rn" ? "Text" : "span";
+      if (target === "rn") context.imports.add("Text");
+      return `${indent}<${tag}${styleAttribute}>${this.renderChildren(children, target, context, depth)}</${tag}>`;
     }
 
-    if (!node || !node.type) {
-      return `${indent}/* Invalid Node */`;
-    }
-
-    const { type, props = {}, style = {}, children = [] } = node;
-
-    let tagName = type;
-    let mappedProps: Record<string, any> = { ...props };
-
-    if (target == "rn") {
-      if (
-        [
-          "View",
-          "Text",
-          "TextInput",
-          "Image",
-          "TouchableOpacity",
-          "ScrollView",
-        ].includes(type)
-      ) {
-        imports.add(type);
-      } else if (type === "Container") {
-        tagName = "View";
-        imports.add("View");
-      } else if (type === "Button") {
-        tagName = "TouchableOpacity";
-        imports.add("TouchableOpacity");
+    if (node.type === "TextInput") {
+      context.usesFormState = true;
+      const fieldName = String(props.fieldName ?? node.id ?? "input");
+      const placeholder = String(props.placeholder ?? "내용을 입력하세요");
+      if (target === "rn") {
+        context.imports.add("TextInput");
+        return `${indent}<TextInput\n${indent}  placeholder={${JSON.stringify(placeholder)}}\n${indent}  value={formData[${JSON.stringify(fieldName)}] ?? ''}\n${indent}  onChangeText={(value) => handleInputChange(${JSON.stringify(fieldName)}, value)}${styleAttribute}\n${indent}/>`;
       }
-
-      if (Object.keys(style).length > 0) {
-        mappedProps["style"] = style;
-      }
-    } else {
-      if (type === "View" || type === "Container") tagName = "div";
-      else if (type === "Text") tagName = "span";
-      else if (type === "Button") tagName = "button";
-      else if (type === "TextInput") tagName = "input";
-      else if (type === "Image") tagName = "img";
-
-      if (Object.keys(style).length > 0) {
-        mappedProps["style"] = style;
-      }
+      return `${indent}<input\n${indent}  type="text"\n${indent}  placeholder={${JSON.stringify(placeholder)}}\n${indent}  value={formData[${JSON.stringify(fieldName)}] ?? ''}\n${indent}  onChange={(event) => handleInputChange(${JSON.stringify(fieldName)}, event.target.value)}${styleAttribute}\n${indent}/>`;
     }
 
-    const propsString = Object.keys(mappedProps)
-      .map((key) => {
-        const val = mappedProps[key];
-        if (typeof val === "object") {
-          return `${key}={${JSON.stringify(val)}`;
-        }
-        if (typeof val === "boolean" || typeof val === "number") {
-          return `${key}={${val}}`;
-        }
-        return `${key}="${val}"`;
-      })
-      .join(" ");
-
-    const openingTag = propsString
-      ? `<${tagName} ${propsString}>`
-      : `<${tagName}>`;
-
-    if (children.length === 0) {
-      return `${indent}<${tagName} ${propsString} />`;
+    if (node.type === "Button") {
+      const tag = target === "rn" ? "Pressable" : "button";
+      if (target === "rn") context.imports.add("Pressable");
+      const typeAttribute = target === "react" ? ' type="button"' : "";
+      return `${indent}<${tag}${typeAttribute}${styleAttribute}>${this.renderChildren(children, target, context, depth)}</${tag}>`;
     }
 
-    const childrenCode = children
-      .map((child) => this.renderNode(child, target, imports, indentDepth + 1))
-      .join("\n");
+    if (node.type === "DataList") {
+      const tag = target === "rn" ? "View" : "section";
+      if (target === "rn") context.imports.add("View");
+      const description = String(props.displayField || props.tableName || "데이터 목록");
+      if (target === "rn") context.imports.add("Text");
+      const label = target === "rn" ? `<Text>${this.textValue(description)}</Text>` : this.textValue(description);
+      return `${indent}<${tag}${styleAttribute}>${label}</${tag}>`;
+    }
 
-    return `${indent}${openingTag}\n${childrenCode}\n${indent}</${tagName}>`;
+    const tag = target === "rn" ? "View" : "div";
+    if (target === "rn") context.imports.add("View");
+    return `${indent}<${tag}${styleAttribute}>${this.renderChildren(children, target, context, depth)}</${tag}>`;
   }
 
-  private capitalize(str: string): string {
-    if (!str) return "App";
-    return str.charAt(0).toUpperCase() + str.slice(1);
+  private componentName(pageName: string) {
+    const name = pageName
+      .replace(/[^a-zA-Z0-9]+/g, " ")
+      .trim()
+      .split(" ")
+      .filter(Boolean)
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join("");
+    return `${name || "Generated"}Page`;
   }
 
-  generateReactNative(pageName: string, ast: ComponentNode): string {
-    const importedComponents = new Set<string>();
-    const codeBody = this.renderNode(ast, "rn", importedComponents);
-    const imports = Array.from(importedComponents).join(", ");
+  private generate(pageName: string, ast: ComponentNode, target: Target) {
+    const context: GenerationContext = { imports: new Set(), usesFormState: false };
+    const body = this.renderNode(ast, target, context);
+    const reactImport = context.usesFormState
+      ? "import { useState } from 'react';"
+      : "import React from 'react';";
+    const nativeImport =
+      target === "rn" && context.imports.size
+        ? `\nimport { ${[...context.imports].sort().join(", ")} } from 'react-native';`
+        : "";
+    const state = context.usesFormState
+      ? `\n  const [formData, setFormData] = useState<Record<string, string>>({});
 
-    return `import React from 'react';
-    import { ${imports ? imports + ", " : ""}StyleSheet } from 'react-native';
-    export default function ${this.capitalize(pageName)}Page() {
-        return (
-            ${codeBody}
-        );
-    }
-    `;
+  const handleInputChange = (fieldName: string, value: string) => {
+    setFormData((current) => ({ ...current, [fieldName]: value }));
+  };
+`
+      : "";
+
+    return `${reactImport}${nativeImport}
+
+export default function ${this.componentName(pageName)}() {${state}
+  return (
+${body}
+  );
+}
+`;
   }
 
-  generateReactWeb(pageName: string, ast: ComponentNode): string {
-    const codeBody = this.renderNode(ast, "react", new Set());
+  generateReactNative(pageName: string, ast: ComponentNode) {
+    return this.generate(pageName, ast, "rn");
+  }
 
-    return `import React from 'react';
-        export default function ${this.capitalize(pageName)}Page() {
-        return (
-            ${codeBody}
-        );
-    }
-    `;
+  generateReactWeb(pageName: string, ast: ComponentNode) {
+    return this.generate(pageName, ast, "react");
   }
 }

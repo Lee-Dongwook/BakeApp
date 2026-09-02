@@ -1,7 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import Prism from "prismjs";
+import "prismjs/components/prism-jsx";
+import "prismjs/components/prism-typescript";
+import "prismjs/components/prism-tsx";
 import { apiClient } from "../api/client";
 import { selectActivePage, usePageStore } from "../store/usePageStore";
 import { generateReactCode } from "../utils/codeGenerator";
+import { formatGeneratedCode } from "../utils/formatGeneratedCode";
 import {
   X,
   Copy,
@@ -26,6 +31,13 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
   const [code, setCode] = useState<string>("코드 생성 중...");
   const [loading, setLoading] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const highlightedCode = useMemo(() => {
+    const grammar =
+      Prism.languages["tsx"] ??
+      Prism.languages["typescript"] ??
+      Prism.languages["markup"];
+    return Prism.highlight(code, grammar, "tsx");
+  }, [code]);
 
   useEffect(() => {
     if (!isOpen || !activePage) return;
@@ -41,14 +53,18 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
             ast: activePage.rootNode,
           },
         );
-        setCode(response.code);
+        setCode(await formatGeneratedCode(response.code));
       } catch (error) {
         console.warn(
-          "백엔드 컴파일러 연결 실패 - 클라이언트 로컬 변환기로 전환합니다:",
+          "백엔드 생성 코드가 유효하지 않아 로컬 변환기로 전환합니다:",
           error,
         );
         const fallbackCode = generateReactCode(activePage.rootNode);
-        setCode(fallbackCode);
+        try {
+          setCode(await formatGeneratedCode(fallbackCode));
+        } catch {
+          setCode(fallbackCode);
+        }
       } finally {
         setLoading(false);
       }
@@ -133,7 +149,10 @@ export const CodePreviewModal: React.FC<CodePreviewModalProps> = ({
               <span>백엔드 UI 컴파일러 엔진 작동 중...</span>
             </div>
           ) : (
-            <pre className="whitespace-pre-wrap">{code}</pre>
+            <pre
+              className="code-preview whitespace-pre-wrap"
+              dangerouslySetInnerHTML={{ __html: highlightedCode }}
+            />
           )}
         </div>
 
