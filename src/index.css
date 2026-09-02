@@ -239,6 +239,10 @@
     background: var(--action-primary);
     color: var(--action-primary-text);
   }
+  .segment.is-selected {
+    background: var(--surface-inset);
+    color: var(--text-primary);
+  }
   .panel-tab {
     color: var(--text-muted);
     border-radius: var(--radius-sm);

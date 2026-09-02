@@ -2,9 +2,14 @@ import React, { useState } from "react";
 import { usePageStore } from "../store/usePageStore";
 import { FileText, Plus, Trash2, Globe } from "lucide-react";
 
-export const PageManagerPanel: React.FC = () => {
-  const { pages, activePageId, setActivePage, addPage, deletePage } =
-    usePageStore();
+interface PageManagerPanelProps {
+  onNavigate: (pageId: string) => void;
+}
+
+export const PageManagerPanel: React.FC<PageManagerPanelProps> = ({
+  onNavigate,
+}) => {
+  const { pages, activePageId, addPage, deletePage } = usePageStore();
 
   const [isAdding, setIsAdding] = useState(false);
   const [newPageName, setNewPageName] = useState("");
@@ -15,10 +20,11 @@ export const PageManagerPanel: React.FC = () => {
 
     if (!newPageName.trim() || !newPagePath.trim()) return;
 
-    addPage(newPageName.trim(), newPagePath.trim());
+    const newPageId = addPage(newPageName.trim(), newPagePath.trim());
     setNewPageName("");
     setNewPagePath("");
     setIsAdding(false);
+    onNavigate(newPageId);
   };
 
   return (
@@ -83,7 +89,7 @@ export const PageManagerPanel: React.FC = () => {
           return (
             <div
               key={page.id}
-              onClick={() => setActivePage(page.id)}
+              onClick={() => onNavigate(page.id)}
               className={`list-item group flex cursor-pointer items-center justify-between px-3 py-2 text-xs ${
                 isActive ? "is-active font-semibold" : ""
               }`}

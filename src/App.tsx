@@ -20,6 +20,12 @@ import { ProjectDashboard } from "./components/ProjectDashboard";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
 import { useProjectDocumentStore } from "./store/useProjectDocumentStore";
+import {
+  getHashRoute,
+  matchPageRoute,
+  navigateToPageRoute,
+  pagePathForNavigation,
+} from "./utils/pageRouter";
 
 type SidebarTab = "COMPONENTS" | "PAGES" | "QUERIES";
 
@@ -37,12 +43,16 @@ export default function App() {
   const isDirty = useProjectDocumentStore((state) => state.isDirty);
   const saveError = useProjectDocumentStore((state) => state.error);
   const activePage = usePageStore(selectActivePage);
+  const pages = usePageStore((state) => state.pages);
+  const pageParams = usePageStore((state) => state.pageParams);
+  const setActivePage = usePageStore((state) => state.setActivePage);
   const addNode = usePageStore((state) => state.addNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
   const setSelectedNodeId = useCanvasStore((state) => state.setSelectedNodeId);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
+  const [routePath, setRoutePath] = useState(getHashRoute);
 
   useEffect(() => {
     void initialize();
@@ -53,6 +63,23 @@ export default function App() {
       void loadDocument(activeProject.id);
     }
   }, [activeProject, loadDocument]);
+
+  useEffect(() => {
+    const syncRoute = () => setRoutePath(getHashRoute());
+    window.addEventListener("hashchange", syncRoute);
+    return () => window.removeEventListener("hashchange", syncRoute);
+  }, []);
+
+  useEffect(() => {
+    const match = matchPageRoute(pages, routePath);
+    if (
+      match &&
+      (match.page.id !== activePage?.id ||
+        JSON.stringify(match.params) !== JSON.stringify(pageParams))
+    ) {
+      setActivePage(match.page.id, match.params);
+    }
+  }, [activePage?.id, pageParams, pages, routePath, setActivePage]);
 
   useEffect(() => {
     if (!activeProject || !isDirty || isSaving || saveError) return;
@@ -73,6 +100,14 @@ export default function App() {
       setSelectedNodeId(activePage.rootNode.id);
     }
   }, [activePage, selectedNodeId, setSelectedNodeId]);
+
+  const handlePageNavigate = (pageId: string) => {
+    const page = pages.find((candidate) => candidate.id === pageId);
+    if (!page) return;
+    const nextPath = pagePathForNavigation(page);
+    navigateToPageRoute(nextPath);
+    setActivePage(page.id, matchPageRoute(pages, nextPath)?.params);
+  };
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -258,7 +293,9 @@ export default function App() {
             </nav>
             <div className="min-h-0 flex-1">
               {sidebarTab === "COMPONENTS" && <ComponentPalette />}
-              {sidebarTab === "PAGES" && <PageManagerPanel />}
+              {sidebarTab === "PAGES" && (
+                <PageManagerPanel onNavigate={handlePageNavigate} />
+              )}
               {sidebarTab === "QUERIES" && <ApiQueryManagerPanel />}
             </div>
           </aside>

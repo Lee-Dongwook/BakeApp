@@ -22,7 +22,7 @@ interface PageState {
   replacePages: (pages: Page[]) => void;
   resetPages: () => void;
   setActivePage: (pageId: string, params?: Record<string, any>) => void;
-  addPage: (name: string, path: string) => void;
+  addPage: (name: string, path: string) => string;
   deletePage: (pageId: string) => void;
   addNode: (pageId: string, parentId: string, newNode: ComponentNode) => void;
   updateNodeStyle: (
@@ -116,6 +116,7 @@ export const usePageStore = create<PageState>((set) => ({
       pageParams: {},
     }));
     notifyEditorChanged();
+    return newPageId;
   },
   deletePage: (pageId) => {
     const previousPageCount = getPageCount();

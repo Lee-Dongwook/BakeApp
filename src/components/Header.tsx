@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useRuntimeStore } from "../store/useRuntimeStore";
 import {
   ChevronLeft,
@@ -6,6 +6,7 @@ import {
   Database,
   Edit3,
   LogOut,
+  MoreHorizontal,
   Play,
   RotateCcw,
   Save,
@@ -37,11 +38,11 @@ export const Header: React.FC<HeaderProps> = ({
   const mode = useRuntimeStore((state) => state.mode);
   const setMode = useRuntimeStore((state) => state.setMode);
   const resetFormState = useRuntimeStore((state) => state.resetFormState);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   return (
     <header className="app-header flex h-16 shrink-0 items-center justify-between border-b px-6">
-      {/* 로고 영역 */}
-      <div className="flex items-center gap-3">
+      <div className="flex min-w-0 items-center gap-3">
         <button
           type="button"
           onClick={onBackToProjects}
@@ -50,47 +51,35 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <ChevronLeft className="h-4 w-4" /> 프로젝트
         </button>
-        <span className="text-xl">🍞</span>
-        <div>
-          <h1 className="brand text-sm">BakeApp Studio</h1>
-          <p className="text-muted max-w-40 truncate text-xs">{projectName}</p>
+        <div className="min-w-0 border-l border-[var(--border-subtle)] pl-3">
+          <h1 className="truncate text-sm font-semibold">{projectName}</h1>
+          <p className="text-muted text-[11px]">BakeApp Studio</p>
         </div>
       </div>
 
-      {/* 중앙: Edit / Live Preview 모드 스위처 */}
       <div className="segmented">
         <button
           type="button"
           onClick={() => setMode("EDIT")}
           className={`segment flex items-center gap-1.5 ${
-            mode === "EDIT" ? "is-active" : ""
+            mode === "EDIT" ? "is-selected" : ""
           }`}
         >
           <Edit3 className="h-3.5 w-3.5" />
-          <span>Edit Mode</span>
+          <span>편집</span>
         </button>
         <button
           type="button"
           onClick={() => setMode("PREVIEW")}
           className={`segment flex items-center gap-1.5 ${
-            mode === "PREVIEW" ? "is-active" : ""
+            mode === "PREVIEW" ? "is-selected" : ""
           }`}
         >
           <Play className="h-3.5 w-3.5" />
-          <span>Live Preview</span>
-        </button>
-        <button
-          type="button"
-          onClick={onSignOut}
-          className="icon-btn"
-          title="로그아웃"
-          aria-label="로그아웃"
-        >
-          <LogOut className="h-4 w-4" />
+          <span>라이브 미리보기</span>
         </button>
       </div>
 
-      {/* 우측: DB Builder & Code Preview 액션 버튼 */}
       <div className="flex items-center gap-3">
         <div className="flex items-center gap-2">
           {isDirty && <span className="text-xs text-amber-300">변경됨</span>}
@@ -109,26 +98,51 @@ export const Header: React.FC<HeaderProps> = ({
             {isSaving ? "저장 중…" : "저장"}
           </button>
         </div>
-        {mode === "PREVIEW" && (
+        <div className="relative">
           <button
             type="button"
-            onClick={resetFormState}
-            className="btn btn-secondary"
-            title="입력 폼 상태 초기화"
+            onClick={() => setIsMoreMenuOpen((isOpen) => !isOpen)}
+            className="icon-btn border border-[var(--border-strong)]"
+            aria-label="추가 도구"
+            aria-expanded={isMoreMenuOpen}
           >
-            <RotateCcw className="h-3.5 w-3.5" />
-            <span>Reset State</span>
+            <MoreHorizontal className="h-4 w-4" />
           </button>
-        )}
-
-        <button
-          type="button"
-          onClick={onOpenDbBuilder}
-          className="btn btn-secondary text-amber-300"
-        >
-          <Database className="h-3.5 w-3.5" />
-          <span>DB Builder</span>
-        </button>
+          {isMoreMenuOpen && (
+            <div className="surface absolute right-0 top-11 z-20 w-44 p-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenDbBuilder();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-inset)] hover:text-white"
+              >
+                <Database className="h-3.5 w-3.5" /> DB Builder
+              </button>
+              {mode === "PREVIEW" && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    resetFormState();
+                    setIsMoreMenuOpen(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-inset)] hover:text-white"
+                >
+                  <RotateCcw className="h-3.5 w-3.5" /> 상태 초기화
+                </button>
+              )}
+              <div className="my-1 border-t border-[var(--border-subtle)]" />
+              <button
+                type="button"
+                onClick={onSignOut}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-red-400 hover:bg-red-500/10"
+              >
+                <LogOut className="h-3.5 w-3.5" /> 로그아웃
+              </button>
+            </div>
+          )}
+        </div>
 
         <button
           type="button"
@@ -136,7 +150,7 @@ export const Header: React.FC<HeaderProps> = ({
           className="btn btn-primary"
         >
           <Code2 className="h-3.5 w-3.5" />
-          <span>Preview &amp; Code</span>
+          <span>미리보기 · 코드</span>
         </button>
       </div>
     </header>
