@@ -19,7 +19,7 @@ const PaletteItem: React.FC<PaletteItemProps> = ({ type, label, icon }) => {
       ref={setNodeRef}
       {...listeners}
       {...attributes}
-      className={`surface card-interactive flex cursor-grab items-center space-x-2 p-3 select-none ${
+      className={`surface card-interactive flex cursor-grab items-center space-x-2 p-4 select-none ${
         isDragging ? "opacity-40" : ""
       }`}
     >
@@ -51,8 +51,8 @@ export const ComponentPalette: React.FC = () => {
   ];
 
   return (
-    <div className="app-sidebar h-full w-full p-4">
-      <h3 className="eyebrow mb-3">Components</h3>
+    <div className="app-sidebar h-full w-full p-6">
+      <h3 className="eyebrow mb-4">Components</h3>
       <div className="grid grid-cols-2 gap-2">
         {items.map((item) => (
           <PaletteItem

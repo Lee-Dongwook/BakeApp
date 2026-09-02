@@ -69,7 +69,7 @@ export const PropertyInspector = () => {
   };
 
   return (
-    <aside className="app-inspector flex h-full w-72 flex-col justify-between border-l">
+    <aside className="app-inspector flex h-full w-80 flex-col justify-between border-l">
       <div className="flex flex-col flex-1 overflow-hidden">
         <InspectorHeader
           nodeType={selectedNode.type}
@@ -81,7 +81,7 @@ export const PropertyInspector = () => {
           }}
         />
         <TabSwitcher activeTab={activeTab} onChange={setActiveTab} />
-        <div className="flex-1 space-y-6 overflow-y-auto p-4">
+        <div className="flex-1 space-y-6 overflow-y-auto p-6">
           {activeTab === "STYLE" ? (
             <StyleEditor
               page={activePage}
@@ -97,7 +97,7 @@ export const PropertyInspector = () => {
           )}
         </div>
       </div>
-      <div className="border-t p-4">
+      <div className="border-t p-6">
         <span className="text-muted block truncate font-mono text-[10px]">
           ID: {selectedNode.id}
         </span>
@@ -108,7 +108,7 @@ export const PropertyInspector = () => {
 
 function EmptyInspector({ message }: { message: string }) {
   return (
-    <aside className="app-inspector w-72 border-l p-4">
+    <aside className="app-inspector w-80 border-l p-6">
       <h3 className="eyebrow mb-3">Properties</h3>
       <div className="text-muted text-xs">{message}</div>
     </aside>
@@ -127,7 +127,7 @@ function InspectorHeader({
   onDelete: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between border-b p-4">
+    <div className="flex items-center justify-between border-b p-6">
       <div>
         <span className="badge px-2 py-0.5 text-xs">{nodeType}</span>
         <h2 className="text-secondary mt-1 text-sm font-semibold">

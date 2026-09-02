@@ -41,8 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
 
   return (
-    <header className="app-header flex h-16 shrink-0 items-center justify-between border-b px-6">
-      <div className="flex min-w-0 items-center gap-3">
+    <header className="app-header grid h-16 shrink-0 grid-cols-[1fr_auto_1fr] items-center border-b px-6">
+      <div className="flex min-w-0 items-center gap-2">
         <button
           type="button"
           onClick={onBackToProjects}
@@ -51,7 +51,7 @@ export const Header: React.FC<HeaderProps> = ({
         >
           <ChevronLeft className="h-4 w-4" /> 프로젝트
         </button>
-        <div className="min-w-0 border-l border-[var(--border-subtle)] pl-3">
+        <div className="min-w-0 border-l border-[var(--border-subtle)] pl-2">
           <h1 className="truncate text-sm font-semibold">{projectName}</h1>
           <p className="text-muted text-[11px]">BakeApp Studio</p>
         </div>
@@ -80,7 +80,7 @@ export const Header: React.FC<HeaderProps> = ({
         </button>
       </div>
 
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-3 justify-self-end">
         <div className="flex items-center gap-2">
           {isDirty && <span className="text-xs text-amber-300">변경됨</span>}
           {saveError && (

@@ -51,7 +51,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
   return (
     <div className="app-sidebar flex h-full w-full flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between border-b p-4">
+      <div className="flex items-center justify-between border-b p-6">
         <div className="flex items-center gap-2">
           <Database className="brand h-4 w-4" />
           <h3 className="font-bold text-sm">API Query Manager</h3>
@@ -61,7 +61,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
       {/* Query Generator Form */}
       <form
         onSubmit={handleCreate}
-        className="space-y-2 border-b bg-[var(--surface-inset)] p-3"
+        className="space-y-2 border-b bg-[var(--surface-inset)] p-4"
       >
         <div className="flex gap-2">
           <select
@@ -104,7 +104,7 @@ export const ApiQueryManagerPanel: React.FC = () => {
       </form>
 
       {/* Query List */}
-      <div className="flex-1 overflow-y-auto p-2 space-y-1">
+      <div className="flex-1 space-y-1 overflow-y-auto p-4">
         {queries.map((q) => (
           <div
             key={q.id}

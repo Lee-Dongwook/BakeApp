@@ -300,7 +300,7 @@ export default function App() {
             </div>
           </aside>
 
-          <main className="workspace flex flex-1 items-center justify-center overflow-auto p-8">
+          <main className="workspace flex flex-1 items-center justify-center overflow-auto p-12">
             <CanvasDroppable rootNode={activePage.rootNode} />
           </main>
 
