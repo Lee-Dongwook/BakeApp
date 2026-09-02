@@ -2,8 +2,10 @@ import { FormEvent, useEffect, useState } from "react";
 import { FolderOpen, LogOut, Plus } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useProjectStore } from "../store/useProjectStore";
+import { useNavigate } from "@tanstack/react-router";
 
 export const ProjectDashboard = () => {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const signOut = useAuthStore((state) => state.signOut);
   const projects = useProjectStore((state) => state.projects);
@@ -31,6 +33,7 @@ export const ProjectDashboard = () => {
       const project = await createProject(trimmedName);
       setName("");
       selectProject(project);
+      void navigate({ to: "/project/$projectId", params: { projectId: project.id }, search: { mode: "edit" } });
     } catch (error) {
       setCreateError(
         error instanceof Error
@@ -102,7 +105,10 @@ export const ProjectDashboard = () => {
                 <button
                   key={project.id}
                   type="button"
-                  onClick={() => selectProject(project)}
+                  onClick={() => {
+                    selectProject(project);
+                    void navigate({ to: "/project/$projectId", params: { projectId: project.id }, search: { mode: "edit" } });
+                  }}
                   className="surface card-interactive flex items-center gap-3 p-5 text-left"
                 >
                   <FolderOpen className="h-5 w-5 shrink-0 text-amber-400" />

@@ -16,6 +16,7 @@
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
     "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-router": "^1.170.32",
     "@types/node": "^26.4.0",
     "@types/prismjs": "^1.26.6",
     "@types/react": "^19.2.18",

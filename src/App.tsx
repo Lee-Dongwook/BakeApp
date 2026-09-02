@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useNavigate, useSearch } from "@tanstack/react-router";
 import { DndContext, DragEndEvent } from "@dnd-kit/core";
 import {
   findNodeById,
@@ -20,12 +21,7 @@ import { ProjectDashboard } from "./components/ProjectDashboard";
 import { useAuthStore } from "./store/useAuthStore";
 import { useProjectStore } from "./store/useProjectStore";
 import { useProjectDocumentStore } from "./store/useProjectDocumentStore";
-import {
-  getHashRoute,
-  matchPageRoute,
-  navigateToPageRoute,
-  pagePathForNavigation,
-} from "./utils/pageRouter";
+import { useRuntimeStore } from "./store/useRuntimeStore";
 
 type SidebarTab = "COMPONENTS" | "PAGES" | "QUERIES";
 
@@ -44,7 +40,6 @@ export default function App() {
   const saveError = useProjectDocumentStore((state) => state.error);
   const activePage = usePageStore(selectActivePage);
   const pages = usePageStore((state) => state.pages);
-  const pageParams = usePageStore((state) => state.pageParams);
   const setActivePage = usePageStore((state) => state.setActivePage);
   const addNode = usePageStore((state) => state.addNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
@@ -52,7 +47,10 @@ export default function App() {
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
-  const [routePath, setRoutePath] = useState(getHashRoute);
+  const search = useSearch({ from: "/project/$projectId" });
+  const navigate = useNavigate({ from: "/project/$projectId" });
+  const mode = useRuntimeStore((state) => state.mode);
+  const setMode = useRuntimeStore((state) => state.setMode);
 
   useEffect(() => {
     void initialize();
@@ -65,21 +63,14 @@ export default function App() {
   }, [activeProject, loadDocument]);
 
   useEffect(() => {
-    const syncRoute = () => setRoutePath(getHashRoute());
-    window.addEventListener("hashchange", syncRoute);
-    return () => window.removeEventListener("hashchange", syncRoute);
-  }, []);
+    if (search.pageId && pages.some((page) => page.id === search.pageId)) {
+      setActivePage(search.pageId);
+    }
+  }, [pages, search.pageId, setActivePage]);
 
   useEffect(() => {
-    const match = matchPageRoute(pages, routePath);
-    if (
-      match &&
-      (match.page.id !== activePage?.id ||
-        JSON.stringify(match.params) !== JSON.stringify(pageParams))
-    ) {
-      setActivePage(match.page.id, match.params);
-    }
-  }, [activePage?.id, pageParams, pages, routePath, setActivePage]);
+    if (search.mode) setMode(search.mode === "preview" ? "PREVIEW" : "EDIT");
+  }, [search.mode, setMode]);
 
   useEffect(() => {
     if (!activeProject || !isDirty || isSaving || saveError) return;
@@ -101,13 +92,16 @@ export default function App() {
     }
   }, [activePage, selectedNodeId, setSelectedNodeId]);
 
-  const handlePageNavigate = (pageId: string) => {
-    const page = pages.find((candidate) => candidate.id === pageId);
-    if (!page) return;
-    const nextPath = pagePathForNavigation(page);
-    navigateToPageRoute(nextPath);
-    setActivePage(page.id, matchPageRoute(pages, nextPath)?.params);
-  };
+  useEffect(() => {
+    if (!activePage || search.pageId === activePage.id) return;
+    void navigate({ search: (previous) => ({ ...previous, pageId: activePage.id }) });
+  }, [activePage, navigate, search.pageId]);
+
+  useEffect(() => {
+    const nextMode = mode === "PREVIEW" ? "preview" : "edit";
+    if (search.mode === nextMode) return;
+    void navigate({ search: (previous) => ({ ...previous, mode: nextMode }) });
+  }, [mode, navigate, search.mode]);
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
@@ -294,7 +288,7 @@ export default function App() {
             <div className="min-h-0 flex-1">
               {sidebarTab === "COMPONENTS" && <ComponentPalette />}
               {sidebarTab === "PAGES" && (
-                <PageManagerPanel onNavigate={handlePageNavigate} />
+                <PageManagerPanel onNavigate={setActivePage} />
               )}
               {sidebarTab === "QUERIES" && <ApiQueryManagerPanel />}
             </div>
