@@ -1,14 +1,8 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { findNodeById, useCanvasStore } from "../store/useCanvasStore";
 import { selectActivePage, usePageStore } from "../store/usePageStore";
-import {
-  Plus,
-  Sliders,
-  Trash2,
-  Type as TypeIcon,
-  X,
-  Zap,
-} from "lucide-react";
+import { Plus, Sliders, Trash2, Type as TypeIcon, X, Zap } from "lucide-react";
+import type { ColumnMeta, TableMeta } from "../api/schema";
 
 type WorkflowActionType = "DB_INSERT" | "SHOW_ALERT";
 
@@ -28,11 +22,37 @@ export const PropertyInspector: React.FC = () => {
   );
   const deleteNode = usePageStore((state) => state.deleteNode);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
-  const setSelectedNodeId = useCanvasStore(
-    (state) => state.setSelectedNodeId,
-  );
+  const setSelectedNodeId = useCanvasStore((state) => state.setSelectedNodeId);
 
   const [activeTab, setActiveTab] = useState<"STYLE" | "WORKFLOW">("STYLE");
+  const [tables, setTables] = useState<TableMeta[]>([]);
+  const [loadingSchema, setLoadingSchema] = useState<boolean>(false);
+
+  useEffect(() => {
+    const fetchSchema = async () => {
+      const projectId = localStorage.getItem("currentProjectId");
+      const token = localStorage.getItem("accessToken");
+
+      if (!projectId || !token) return;
+
+      try {
+        setLoadingSchema(true);
+        const res = await fetch(`/api/dynamic-schema/tables/${projectId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTables(data);
+        }
+      } catch (err) {
+        console.error("Schema fetch failed:", err);
+      } finally {
+        setLoadingSchema(false);
+      }
+    };
+
+    fetchSchema();
+  }, []);
 
   if (!activePage || !selectedNodeId) {
     return (
@@ -65,7 +85,8 @@ export const PropertyInspector: React.FC = () => {
     isTextType && typeof selectedNode.children?.[0] === "string"
       ? selectedNode.children[0]
       : "";
-  const actions = (selectedNode.props?.onClickWorkflow || []) as WorkflowAction[];
+  const actions = (selectedNode.props?.onClickWorkflow ||
+    []) as WorkflowAction[];
 
   const saveActions = (updatedActions: WorkflowAction[]) => {
     const linkedActions = updatedActions.map((action, index) => ({
@@ -109,6 +130,12 @@ export const PropertyInspector: React.FC = () => {
   const handleRemoveAction = (index: number) => {
     saveActions(actions.filter((_, actionIndex) => actionIndex !== index));
   };
+
+  const currentTableName = (selectedNode.props?.tableName as string) || "";
+  const currentDisplayFieldName =
+    (selectedNode.props?.displayField as string) || "";
+  const currentTable = tables.find((t) => t.table_name === currentTableName);
+  const availableColumns = currentTable?.columns || [];
 
   return (
     <aside className="w-72 border-l border-slate-800 bg-slate-950 flex flex-col justify-between h-full">
@@ -209,40 +236,54 @@ export const PropertyInspector: React.FC = () => {
                   />
                 </div>
               )}
-
+              {/* DataList Dynamic Schema Selector */}
               {selectedNode.type === "DataList" && (
                 <div className="space-y-3">
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-400">
-                      테이블 이름
+                      대상 테이블
                     </label>
-                    <input
-                      type="text"
-                      value={selectedNode.props?.tableName || ""}
-                      placeholder="예: products"
+                    <select
+                      value={currentTableName}
                       onChange={(e) =>
                         updateNodeProps(activePage.id, selectedNode.id, {
                           tableName: e.target.value,
+                          displayField: "",
                         })
                       }
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
+                      disabled={loadingSchema}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                    >
+                      <option value="">-- 테이블 선택 --</option>
+                      {tables.map((t) => (
+                        <option key={t.table_name} value={t.table_name}>
+                          {t.table_name}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="space-y-2">
+
+                  <div className="space-y-1">
                     <label className="text-xs font-medium text-slate-400">
                       목록에 표시할 컬럼
                     </label>
-                    <input
-                      type="text"
-                      value={selectedNode.props?.displayField || ""}
-                      placeholder="예: title"
+                    <select
+                      value={currentDisplayFieldName}
                       onChange={(e) =>
                         updateNodeProps(activePage.id, selectedNode.id, {
                           displayField: e.target.value,
                         })
                       }
-                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500"
-                    />
+                      disabled={!currentTableName || loadingSchema}
+                      className="w-full bg-slate-900 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-amber-500 disabled:opacity-50"
+                    >
+                      <option value="">-- 컬럼 선택 --</option>
+                      {availableColumns.map((col) => (
+                        <option key={col.column_name} value={col.column_name}>
+                          {col.column_name} ({col.data_type})
+                        </option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               )}
