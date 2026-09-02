@@ -6,6 +6,7 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 - **인증과 프로젝트**
   - 자체 이메일/비밀번호 로그인과 JWT 기반 브라우저 세션 확인
+  - 15분 access token과 회전형 HttpOnly refresh token 기반 세션 갱신
   - 프로젝트 생성·조회·이름 변경·삭제
   - `owner`, `editor`, `viewer` 멤버 역할
 - **프로젝트 저장**
@@ -46,9 +47,11 @@ pnpm --dir server install
 DATABASE_URL=your_postgresql_connection_string
 JWT_SECRET=at_least_32_characters_long_random_secret
 PORT=3000
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 `DATABASE_SSL=true`은 TLS 연결이 필요한 경우에만 추가하세요. `JWT_SECRET`은 운영 환경에서 반드시 충분히 긴 임의 값으로 설정하며, 저장소에 커밋하지 않습니다.
+`FRONTEND_ORIGIN`은 refresh token 쿠키를 허용할 프론트엔드 주소입니다. 배포 환경에서는 실제 HTTPS 프론트 주소로 지정하세요.
 
 프론트가 다른 서버 주소를 사용해야 하면 루트에 `.env.local`을 만들 수 있습니다.
 
@@ -65,8 +68,9 @@ PostgreSQL 클라이언트 또는 사용하는 PostgreSQL 마이그레이션 도
 3. `server/migrations/20260901_create_project_documents.sql`
 4. `server/migrations/20260901_create_project_members.sql`
 5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql` (기존 설치 환경만)
+6. `server/migrations/20260903_create_refresh_tokens.sql`
 
-이 마이그레이션은 `users`, `projects`, `project_documents`, `project_members` 테이블을 생성합니다. 프로젝트 권한은 Supabase RLS가 아닌 백엔드의 인증 가드와 프로젝트 권한 검사로 처리합니다.
+이 마이그레이션은 `users`, `refresh_tokens`, `projects`, `project_documents`, `project_members` 테이블을 생성합니다. 프로젝트 권한은 Supabase RLS가 아닌 백엔드의 인증 가드와 프로젝트 권한 검사로 처리합니다.
 
 ### Docker로 전체 백엔드 실행
 
@@ -111,10 +115,11 @@ pnpm dev
 
 ## 주요 API
 
-모든 프로젝트·동적 데이터 API는 `Authorization: Bearer <access-token>` 헤더가 필요합니다.
+모든 프로젝트·동적 데이터 API는 `Authorization: Bearer <access-token>` 헤더가 필요합니다. access token은 15분 후 만료되며, 프론트 공통 API 클라이언트가 HttpOnly refresh token 쿠키로 자동 갱신 후 원래 요청을 한 번 재시도합니다. refresh token은 서버에 해시로만 저장되고 갱신할 때마다 기존 토큰이 폐기됩니다.
 
 | 목적                         | 메서드 / 경로                                                       |
 | ---------------------------- | ------------------------------------------------------------------- |
+| 로그인 / 세션 갱신 / 로그아웃 | `POST /api/auth/signin`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
 | 프로젝트 생성·목록           | `POST`, `GET /api/projects`                                         |
 | 프로젝트 상세·이름 변경·삭제 | `GET`, `PATCH`, `DELETE /api/projects/:id`                          |
 | 편집 문서 조회·저장          | `GET`, `PUT /api/projects/:id/document`                             |

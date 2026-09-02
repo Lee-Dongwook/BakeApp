@@ -39,6 +39,8 @@ const getErrorMessage = (data: unknown, fallback: string) => {
 };
 
 class ApiClient {
+  private refreshPromise: Promise<void> | null = null;
+
   private toUrl(path: string) {
     return /^https?:\/\//i.test(path) ? path : `${API_BASE_URL}${path}`;
   }
@@ -51,6 +53,7 @@ class ApiClient {
       auth = false,
       ...options
     }: ApiRequestOptions = {},
+    retryOnUnauthorized = true,
   ): Promise<TResponse> {
     const headers = new Headers(requestHeaders);
     let requestBody: BodyInit | undefined;
@@ -74,6 +77,7 @@ class ApiClient {
 
     const response = await fetch(this.toUrl(path), {
       ...options,
+      credentials: "include",
       headers,
       body: requestBody,
     });
@@ -89,6 +93,19 @@ class ApiClient {
       : undefined;
 
     if (!response.ok) {
+      if (response.status === 401 && auth && retryOnUnauthorized) {
+        try {
+          await this.refreshAccessToken();
+          return this.request<TResponse>(
+            path,
+            { body, headers: requestHeaders, auth, ...options },
+            false,
+          );
+        } catch (error) {
+          tokenStorage.clear();
+          throw error;
+        }
+      }
       throw new ApiError(
         getErrorMessage(data, `요청에 실패했습니다. (${response.status})`),
         response.status,
@@ -117,6 +134,24 @@ class ApiClient {
 
   delete<TResponse>(path: string, options?: ApiRequestOptions) {
     return this.request<TResponse>(path, { ...options, method: "DELETE" });
+  }
+
+  private async refreshAccessToken() {
+    if (!this.refreshPromise) {
+      this.refreshPromise = this.request<{ accessToken?: string }>(
+        "/api/auth/refresh",
+        { method: "POST" },
+        false,
+      )
+        .then((data) => {
+          if (!data.accessToken) throw new Error("갱신된 access token을 받지 못했습니다.");
+          tokenStorage.set(data.accessToken);
+        })
+        .finally(() => {
+          this.refreshPromise = null;
+        });
+    }
+    return this.refreshPromise;
   }
 }
 

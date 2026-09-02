@@ -14,7 +14,7 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
-  signOut: () => void;
+  signOut: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set) => ({
@@ -64,8 +64,12 @@ export const useAuthStore = create<AuthState>((set) => ({
     }
   },
 
-  signOut: () => {
-    tokenStorage.clear();
-    set({ user: null, accessToken: null, error: null });
+  signOut: async () => {
+    try {
+      await apiClient.post<void>("/api/auth/logout");
+    } finally {
+      tokenStorage.clear();
+      set({ user: null, accessToken: null, error: null });
+    }
   },
 }));

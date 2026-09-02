@@ -9,7 +9,13 @@ dotenv.config();
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  app.enableCors();
+  const frontendOrigins = process.env.FRONTEND_ORIGIN?.split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+  app.enableCors({
+    origin: frontendOrigins?.length ? frontendOrigins : "http://localhost:5173",
+    credentials: true,
+  });
 
   const config = new DocumentBuilder()
     .setTitle("BakeApp Engine API")

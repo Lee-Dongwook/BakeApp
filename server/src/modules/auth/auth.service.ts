@@ -4,7 +4,13 @@ import {
   OnModuleInit,
   UnauthorizedException,
 } from "@nestjs/common";
-import { createHmac, randomBytes, scrypt, timingSafeEqual } from "crypto";
+import {
+  createHash,
+  createHmac,
+  randomBytes,
+  scrypt,
+  timingSafeEqual,
+} from "crypto";
 import { promisify } from "util";
 import { DatabaseService } from "../database/database.service";
 
@@ -27,7 +33,16 @@ interface JwtPayload {
 }
 
 const scryptAsync = promisify(scrypt);
-const TOKEN_TTL_SECONDS = 60 * 60 * 8;
+const ACCESS_TOKEN_TTL_SECONDS = 60 * 15;
+export const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30;
+export const REFRESH_TOKEN_COOKIE = "bakeapp_refresh_token";
+
+interface RefreshTokenRow {
+  id: string;
+  userId: string;
+  email: string;
+  role: string;
+}
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -77,10 +92,51 @@ export class AuthService implements OnModuleInit {
       throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
     }
 
-    return {
-      accessToken: this.issueAccessToken(user),
-      user: this.toPublicUser(user),
-    };
+    return this.createSession(user);
+  }
+
+  async refresh(refreshToken: string) {
+    const tokenHash = this.hashRefreshToken(refreshToken);
+    const result = await this.databaseService.query<RefreshTokenRow>(
+      `SELECT rt.id, u.id AS "userId", u.email, u.role
+       FROM refresh_tokens rt
+       JOIN users u ON u.id = rt.user_id
+       WHERE rt.token_hash = $1
+         AND rt.revoked_at IS NULL
+         AND rt.expires_at > CURRENT_TIMESTAMP`,
+      [tokenHash],
+    );
+    const session = result.rows[0];
+    if (!session) {
+      throw new UnauthorizedException("유효하지 않거나 만료된 refresh token입니다.");
+    }
+
+    return this.databaseService.runInTransaction(async (client) => {
+      const revoked = await client.query(
+        `UPDATE refresh_tokens
+         SET revoked_at = CURRENT_TIMESTAMP
+         WHERE id = $1 AND revoked_at IS NULL`,
+        [session.id],
+      );
+      if (revoked.rowCount !== 1) {
+        throw new UnauthorizedException("이미 사용된 refresh token입니다.");
+      }
+
+      return this.createSession(
+        { id: session.userId, email: session.email, role: session.role },
+        client,
+      );
+    });
+  }
+
+  async revokeRefreshToken(refreshToken?: string) {
+    if (!refreshToken) return;
+    await this.databaseService.query(
+      `UPDATE refresh_tokens
+       SET revoked_at = CURRENT_TIMESTAMP
+       WHERE token_hash = $1 AND revoked_at IS NULL`,
+      [this.hashRefreshToken(refreshToken)],
+    );
   }
 
   async validateUser(accessToken: string) {
@@ -157,7 +213,7 @@ export class AuthService implements OnModuleInit {
         sub: user.id,
         email: user.email,
         role: user.role,
-        exp: Math.floor(Date.now() / 1000) + TOKEN_TTL_SECONDS,
+        exp: Math.floor(Date.now() / 1000) + ACCESS_TOKEN_TTL_SECONDS,
       } satisfies JwtPayload),
     ).toString("base64url");
     return `${header}.${payload}.${this.sign(`${header}.${payload}`)}`;
@@ -167,6 +223,30 @@ export class AuthService implements OnModuleInit {
     return createHmac("sha256", this.getJwtSecret())
       .update(value)
       .digest("base64url");
+  }
+
+  private async createSession(
+    user: AuthUser,
+    client?: { query: (text: string, params?: unknown[]) => Promise<unknown> },
+  ) {
+    const refreshToken = randomBytes(48).toString("base64url");
+    const expiresAt = new Date(Date.now() + REFRESH_TOKEN_TTL_MS);
+    const query = client ?? this.databaseService;
+    await query.query(
+      `INSERT INTO refresh_tokens (user_id, token_hash, expires_at)
+       VALUES ($1, $2, $3)`,
+      [user.id, this.hashRefreshToken(refreshToken), expiresAt],
+    );
+
+    return {
+      accessToken: this.issueAccessToken(user),
+      refreshToken,
+      user: this.toPublicUser(user),
+    };
+  }
+
+  private hashRefreshToken(refreshToken: string) {
+    return createHash("sha256").update(refreshToken).digest("hex");
   }
 
   private getJwtSecret() {
