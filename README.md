@@ -41,13 +41,16 @@ pnpm --dir server install
 
 ### 2. 환경 변수 설정
 
-`server/.env` 파일을 만들고 실제 비밀값은 저장소에 커밋하지 마세요.
+로컬에서 백엔드를 직접 실행할 때는 예시 파일을 복사해 `server/.env`를 만듭니다. 실제 비밀값은 저장소에 커밋하지 마세요.
 
-```env
-DATABASE_URL=your_postgresql_connection_string
-JWT_SECRET=at_least_32_characters_long_random_secret
-PORT=3000
-FRONTEND_ORIGIN=http://localhost:5173
+```bash
+cp server/.env.example server/.env
+```
+
+`DATABASE_URL`에는 실행할 PostgreSQL 주소를 넣습니다. 로컬 DB라면 예시의 `localhost:5432`를 사용하고, Docker Compose로 DB를 함께 실행한다면 API 컨테이너에서는 `db:5432`를 사용합니다. `JWT_SECRET`은 32자 이상 임의 값이 필수이며, 다음 명령으로 만들 수 있습니다.
+
+```bash
+openssl rand -base64 48
 ```
 
 `DATABASE_SSL=true`은 TLS 연결이 필요한 경우에만 추가하세요. `JWT_SECRET`은 운영 환경에서 반드시 충분히 긴 임의 값으로 설정하며, 저장소에 커밋하지 않습니다.
@@ -80,11 +83,26 @@ PostgreSQL을 로컬에 설치하거나 `DATABASE_URL`을 직접 구성하지 �
 docker compose up --build
 ```
 
+기본값 대신 비밀번호나 JWT 키를 바꾸려면 먼저 루트 예시 파일을 복사해 값을 수정합니다.
+
+```bash
+cp .env.example .env
+docker compose up --build
+```
+
 Compose는 PostgreSQL, API, 마이그레이션 초기화를 함께 실행합니다. API는 `http://localhost:3000/api`에서 사용할 수 있고, DB 데이터는 Docker 볼륨 `postgres-data`에 보관됩니다.
+
+Docker Compose로 API를 실행 중이라면, 프론트엔드는 별도 터미널에서 아래 명령으로만 실행합니다. `pnpm dev`는 API도 한 번 더 실행하려 하므로 사용하지 않습니다.
+
+```bash
+pnpm dev:client
+```
 
 기본 계정 정보와 JWT 키는 **개발용**입니다. 운영 환경에서는 `POSTGRES_PASSWORD`, `DATABASE_URL`, `JWT_SECRET`을 안전한 배포 환경의 시크릿으로 설정하세요. 초기화 SQL은 빈 볼륨에서만 실행되므로, 이미 생성된 DB에는 새 마이그레이션을 별도로 적용해야 합니다.
 
 ### 4. 개발 서버 실행
+
+로컬 PostgreSQL을 직접 준비하고 마이그레이션까지 적용한 경우에는 프론트와 백엔드를 함께 실행할 수 있습니다.
 
 ```bash
 pnpm dev
