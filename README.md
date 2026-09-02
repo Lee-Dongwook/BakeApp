@@ -1,11 +1,11 @@
 # 🍞 BakeApp Studio
 
-BakeApp Studio는 Supabase/PostgreSQL 기반 내부 업무 도구를 시각적으로 설계하는 노코드 앱 빌더 프로토타입입니다. 로그인한 사용자가 프로젝트를 만들고, 화면을 편집하며, 프로젝트별 테이블과 데이터를 연결할 수 있습니다.
+BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설계하는 노코드 앱 빌더 프로토타입입니다. 로그인한 사용자가 프로젝트를 만들고, 화면을 편집하며, 프로젝트별 테이블과 데이터를 연결할 수 있습니다.
 
 ## 현재 구현 범위
 
 - **인증과 프로젝트**
-  - Supabase 이메일/비밀번호 로그인과 브라우저 세션 확인
+  - 자체 이메일/비밀번호 로그인과 JWT 기반 브라우저 세션 확인
   - 프로젝트 생성·조회·이름 변경·삭제
   - `owner`, `editor`, `viewer` 멤버 역할
 - **프로젝트 저장**
@@ -25,8 +25,9 @@ BakeApp Studio는 Supabase/PostgreSQL 기반 내부 업무 도구를 시각적�
 
 - Frontend: React, TypeScript, Vite, Zustand, Tailwind CSS
 - Backend: NestJS, TypeScript
-- Database/Auth: Supabase (PostgreSQL, Auth, RLS)
-- Database access: `pg`, `@supabase/supabase-js`
+- Database: PostgreSQL
+- Authentication: NestJS 자체 인증, scrypt 비밀번호 해시, HS256 JWT
+- Database access: `pg`
 
 ## 시작하기
 
@@ -43,10 +44,11 @@ pnpm --dir server install
 
 ```env
 DATABASE_URL=your_postgresql_connection_string
-SUPABASE_URL=https://your-project.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+JWT_SECRET=at_least_32_characters_long_random_secret
 PORT=3000
 ```
+
+`DATABASE_SSL=true`은 TLS 연결이 필요한 경우에만 추가하세요. `JWT_SECRET`은 운영 환경에서 반드시 충분히 긴 임의 값으로 설정하며, 저장소에 커밋하지 않습니다.
 
 프론트가 다른 서버 주소를 사용해야 하면 루트에 `.env.local`을 만들 수 있습니다.
 
@@ -56,13 +58,14 @@ VITE_API_BASE_URL=http://localhost:3000
 
 ### 3. 데이터베이스 마이그레이션
 
-Supabase SQL Editor 또는 사용하는 PostgreSQL 마이그레이션 도구에서 아래 파일을 **순서대로 한 번씩** 실행합니다.
+PostgreSQL 클라이언트 또는 사용하는 PostgreSQL 마이그레이션 도구에서 아래 파일을 **순서대로 한 번씩** 실행합니다.
 
-1. `server/migrations/20260901_create_projects.sql`
-2. `server/migrations/20260901_create_project_documents.sql`
-3. `server/migrations/20260901_create_project_members.sql`
+1. `server/migrations/20260831_create_users.sql`
+2. `server/migrations/20260901_create_projects.sql`
+3. `server/migrations/20260901_create_project_documents.sql`
+4. `server/migrations/20260901_create_project_members.sql`
 
-이 마이그레이션은 `projects`, `project_documents`, `project_members` 테이블과 RLS 정책을 생성합니다.
+이 마이그레이션은 `users`, `projects`, `project_documents`, `project_members` 테이블을 생성합니다. 프로젝트 권한은 Supabase RLS가 아닌 백엔드의 인증 가드와 프로젝트 권한 검사로 처리합니다.
 
 ### 4. 개발 서버 실행
 
@@ -75,7 +78,7 @@ pnpm dev
 
 ## 사용 흐름
 
-1. Supabase Auth에 가입한 이메일과 비밀번호로 로그인합니다.
+1. `POST /api/auth/signup`으로 계정을 생성한 뒤 해당 이메일과 비밀번호로 로그인합니다.
 2. 프로젝트 대시보드에서 예: `재고 관리` 프로젝트를 만듭니다.
 3. 빌더에서 **DB Builder**를 열고 예: `products` 테이블과 `title`, `price` 컬럼을 만듭니다.
 4. DB Builder의 테이블을 선택해 레코드를 등록하고 미리보기로 확인합니다.

@@ -13,7 +13,12 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
 
     this.pool = new Pool({
       connectionString,
-      ssl: { rejectUnauthorized: false },
+      // 온프레미스 PostgreSQL은 보통 내부 네트워크로 연결합니다.
+      // TLS가 필요한 환경에서만 DATABASE_SSL=true를 설정합니다.
+      ssl:
+        process.env.DATABASE_SSL === "true"
+          ? { rejectUnauthorized: false }
+          : undefined,
     });
   }
 
