@@ -46,6 +46,7 @@ export default function App() {
   const addNode = usePageStore((state) => state.addNode);
   const deleteNode = usePageStore((state) => state.deleteNode);
   const duplicateNode = usePageStore((state) => state.duplicateNode);
+  const reorderNode = usePageStore((state) => state.reorderNode);
   const undo = usePageStore((state) => state.undo);
   const redo = usePageStore((state) => state.redo);
   const selectedNodeId = useCanvasStore((state) => state.selectedNodeId);
@@ -190,6 +191,12 @@ export default function App() {
     const { active, over } = event;
 
     if (over && activePage) {
+      if (active.data.current?.source === "canvas") {
+        reorderNode(activePage.id, String(active.id), String(over.id));
+        setSelectedNodeId(String(active.id));
+        return;
+      }
+
       const type = active.data.current?.type as string;
       const label = active.data.current?.label as string;
 

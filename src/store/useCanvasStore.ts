@@ -122,6 +122,43 @@ export const moveNodeInTree = (
   }));
 };
 
+/** 같은 부모를 가진 두 요소의 위치를 드래그 결과에 맞춰 교체합니다. */
+export const reorderNodeInTree = (
+  rootNode: ComponentNode,
+  activeId: string,
+  overId: string,
+): ComponentNode => {
+  if (activeId === overId) return rootNode;
+
+  const activeParent = findParentNode(rootNode, activeId);
+  const overParent = findParentNode(rootNode, overId);
+
+  // 서로 다른 컨테이너로의 이동은 기존 드롭 방식과 충돌하지 않도록 지원하지 않습니다.
+  if (!activeParent || !overParent || activeParent.id !== overParent.id) {
+    return rootNode;
+  }
+
+  const children = activeParent.children;
+  if (!children) return rootNode;
+
+  const activeIndex = children.findIndex(
+    (child) => typeof child !== "string" && child.id === activeId,
+  );
+  const overIndex = children.findIndex(
+    (child) => typeof child !== "string" && child.id === overId,
+  );
+  if (activeIndex === -1 || overIndex === -1) return rootNode;
+
+  const reordered = [...children];
+  const [moved] = reordered.splice(activeIndex, 1);
+  reordered.splice(overIndex, 0, moved);
+
+  return updateNodeInTree(rootNode, activeParent.id, (parent) => ({
+    ...parent,
+    children: reordered,
+  }));
+};
+
 export interface FlattenedNode {
   node: ComponentNode;
   depth: number;

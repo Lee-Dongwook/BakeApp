@@ -1,7 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
+import {
+  horizontalListSortingStrategy,
+  rectSortingStrategy,
+  SortableContext,
+  useSortable,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { type ComponentNode, useCanvasStore } from "../store/useCanvasStore";
-import { usePageStore } from "../store/usePageStore";
+import { selectActivePage, usePageStore } from "../store/usePageStore";
 import { useRuntimeStore } from "../store/useRuntimeStore";
 import { useQueryStore } from "../store/useQueryStore";
 import { useAuthStore } from "../store/useAuthStore";
@@ -9,10 +17,11 @@ import { useProjectStore } from "../store/useProjectStore";
 import { useWorkflowExecutor } from "../hooks/useWorkflowExecutor";
 import { apiClient } from "../api/client";
 import { DynamicIcon } from "../utils/iconMap";
-import { X, TrendingUp, TrendingDown, Layers } from "lucide-react";
+import { X, TrendingUp, TrendingDown } from "lucide-react";
 
 interface CanvasRendererProps {
   node: ComponentNode | string;
+  isSortable?: boolean;
 }
 
 interface DataListRendererProps {
@@ -21,6 +30,57 @@ interface DataListRendererProps {
   className: string;
   onClick: (event: React.MouseEvent) => void;
 }
+
+type SortingStrategy = typeof verticalListSortingStrategy;
+
+const renderChildren = (
+  children: (ComponentNode | string)[] | undefined,
+  strategy: SortingStrategy = verticalListSortingStrategy,
+) => {
+  if (!children?.length) return null;
+
+  const sortableIds = children
+    .filter((child): child is ComponentNode => typeof child !== "string")
+    .map((child) => child.id);
+
+  return (
+    <SortableContext items={sortableIds} strategy={strategy}>
+      {children.map((child, idx) => (
+        <CanvasRenderer
+          key={typeof child === "string" ? idx : child.id}
+          node={child}
+        />
+      ))}
+    </SortableContext>
+  );
+};
+
+const SortableCanvasNode: React.FC<{ node: ComponentNode }> = ({ node }) => {
+  const mode = useRuntimeStore((state) => state.mode);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useSortable({
+      id: node.id,
+      data: { source: "canvas", nodeId: node.id },
+      disabled: mode !== "EDIT",
+    });
+
+  if (mode !== "EDIT") return <CanvasNodeRenderer node={node} />;
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...attributes}
+      {...listeners}
+      style={{ transform: CSS.Transform.toString(transform), transition }}
+      className={`relative touch-manipulation cursor-grab active:cursor-grabbing ${
+        isDragging ? "z-30 opacity-35" : ""
+      }`}
+      title="드래그하여 순서 변경"
+    >
+      <CanvasNodeRenderer node={node} isSortable />
+    </div>
+  );
+};
 
 const resolveDynamicValue = (
   val: string,
@@ -180,7 +240,10 @@ const DataListRenderer: React.FC<DataListRendererProps> = ({
   );
 };
 
-export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
+const CanvasNodeRenderer: React.FC<CanvasRendererProps> = ({
+  node,
+  isSortable = false,
+}) => {
   const {
     mode,
     formState,
@@ -228,7 +291,8 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
   const { setNodeRef, isOver } = useDroppable({
     id: node.id,
     data: { node },
-    disabled: mode === "PREVIEW" || !isContainer,
+    // 정렬 대상은 SortableCanvasNode가 같은 id의 드롭 영역을 맡습니다.
+    disabled: mode === "PREVIEW" || !isContainer || isSortable,
   });
 
   const isSelected = mode === "EDIT" && selectedNodeId === node.id;
@@ -278,12 +342,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children)
             : mode === "EDIT" && (
                 <div className="text-[11px] text-slate-400 text-center py-3 border border-dashed border-slate-300 rounded-lg">
                   여기로 요소를 끌어다 놓으세요
@@ -311,12 +370,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children, horizontalListSortingStrategy)
             : mode === "EDIT" && (
                 <div className="text-[10px] text-slate-400 py-1 px-3 border border-dashed border-slate-300 rounded">
                   Row
@@ -343,12 +397,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children)
             : mode === "EDIT" && (
                 <div className="text-[10px] text-slate-400 py-1 px-3 border border-dashed border-slate-300 rounded">
                   Column
@@ -376,12 +425,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children, rectSortingStrategy)
             : mode === "EDIT" && (
                 <div className="text-[11px] text-slate-400 text-center py-3 border border-dashed border-slate-300 rounded-lg col-span-full">
                   그리드 컨테이너 ({cols}열)
@@ -414,12 +458,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children)
             : mode === "EDIT" && (
                 <div className="text-[11px] text-slate-400 text-center py-2 border border-dashed border-slate-200 rounded">
                   카드 컨테이너
@@ -459,12 +498,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
             )}
           </div>
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children)
             : mode === "EDIT" && (
                 <div className="text-center text-xs text-slate-400 py-3 border border-dashed border-slate-300 rounded">
                   모달 본문 콘텐츠를 배치하세요
@@ -514,12 +548,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           </div>
           <div className="p-2">
             {node.children && node.children.length > 0
-              ? node.children.map((child, idx) => (
-                  <CanvasRenderer
-                    key={typeof child === "string" ? idx : child.id}
-                    node={child}
-                  />
-                ))
+              ? renderChildren(node.children)
               : mode === "EDIT" && (
                   <div className="text-center text-xs text-slate-400 py-2 border border-dashed border-slate-200 rounded">
                     탭 콘텐츠 영역
@@ -545,12 +574,7 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
           } ${selectionStyle} ${dropZoneStyle}`}
         >
           {node.children && node.children.length > 0
-            ? node.children.map((child, idx) => (
-                <CanvasRenderer
-                  key={typeof child === "string" ? idx : child.id}
-                  node={child}
-                />
-              ))
+            ? renderChildren(node.children)
             : mode === "EDIT" && (
                 <div className="text-[11px] text-slate-400 text-center py-2 border border-dashed border-slate-300 rounded">
                   양식(Form) 영역
@@ -1058,4 +1082,19 @@ export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
         </div>
       );
   }
+};
+
+/** 편집 모드에서는 루트가 아닌 모든 요소를 정렬 가능한 드래그 대상으로 감쌉니다. */
+export const CanvasRenderer: React.FC<CanvasRendererProps> = ({ node }) => {
+  const mode = useRuntimeStore((state) => state.mode);
+  const activePage = usePageStore(selectActivePage);
+
+  if (typeof node === "string") return <CanvasNodeRenderer node={node} />;
+
+  const isRootNode = node.id === activePage?.rootNode.id;
+  if (mode === "EDIT" && !isRootNode) {
+    return <SortableCanvasNode node={node} />;
+  }
+
+  return <CanvasNodeRenderer node={node} />;
 };

@@ -4,6 +4,7 @@ import {
   deleteNodeFromTree,
   updateNodeInTree,
   moveNodeInTree,
+  reorderNodeInTree,
   findNodeById,
   findParentNode,
   type ComponentNode,
@@ -38,6 +39,7 @@ interface PageState {
   deletePage: (pageId: string) => void;
   addNode: (pageId: string, parentId: string, newNode: ComponentNode) => void;
   moveNode: (pageId: string, nodeId: string, direction: "up" | "down") => void;
+  reorderNode: (pageId: string, activeId: string, overId: string) => void;
   duplicateNode: (pageId: string, nodeId: string) => string | null;
   updateNodeStyle: (
     pageId: string,
@@ -233,6 +235,16 @@ export const usePageStore = create<PageState>((set, get) => ({
     set((state) => {
       const nextPages = updatePageTree(state, pageId, (rootNode) =>
         moveNodeInTree(rootNode, nodeId, direction),
+      ).pages;
+      return pushHistory(state, nextPages);
+    });
+    notifyEditorChanged();
+  },
+
+  reorderNode: (pageId, activeId, overId) => {
+    set((state) => {
+      const nextPages = updatePageTree(state, pageId, (rootNode) =>
+        reorderNodeInTree(rootNode, activeId, overId),
       ).pages;
       return pushHistory(state, nextPages);
     });
