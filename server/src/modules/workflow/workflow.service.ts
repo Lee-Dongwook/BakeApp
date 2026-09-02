@@ -65,9 +65,38 @@ export class WorkflowService {
         };
       }
 
+      case "API_CALL": {
+        if (!params.url) {
+          throw new Error("API_CALL 필수 파라미터(url)가 누락되었습니다.");
+        }
+        const method = params.method || "GET";
+        const fetchHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+          ...(params.data?.headers || {}),
+        };
+        const fetchOptions: RequestInit = {
+          method,
+          headers: fetchHeaders,
+        };
+        if (method !== "GET" && params.data) {
+          fetchOptions.body =
+            typeof params.data === "string"
+              ? params.data
+              : JSON.stringify(params.data);
+        }
+        const response = await fetch(params.url, fetchOptions);
+        const resText = await response.text();
+        try {
+          return JSON.parse(resText);
+        } catch {
+          return { data: resText, status: response.status };
+        }
+      }
+
+      case "SHOW_TOAST":
       case "SHOW_ALERT": {
         return {
-          clientAction: "SHOW_ALERT",
+          clientAction: type === "SHOW_TOAST" ? "SHOW_TOAST" : "SHOW_ALERT",
           message: params.message || "완료되었습니다.",
         };
       }

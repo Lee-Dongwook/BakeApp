@@ -4,7 +4,8 @@ export type ActionType =
   | "DB_DELETE"
   | "API_CALL"
   | "NAVIGATE"
-  | "SHOW_ALERT";
+  | "SHOW_ALERT"
+  | "SHOW_TOAST";
 
 export interface ActionNode {
   id: string;

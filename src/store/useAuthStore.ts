@@ -14,14 +14,18 @@ interface AuthState {
   error: string | null;
   initialize: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
+  clearError: () => void;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   accessToken: null,
   isInitializing: true,
   error: null,
+
+  clearError: () => set({ error: null }),
 
   initialize: async () => {
     const accessToken = tokenStorage.get();
@@ -59,6 +63,20 @@ export const useAuthStore = create<AuthState>((set) => ({
     } catch (error) {
       const message =
         error instanceof Error ? error.message : "로그인에 실패했습니다.";
+      set({ error: message });
+      throw new Error(message);
+    }
+  },
+
+  signUp: async (email, password) => {
+    set({ error: null });
+    try {
+      await apiClient.post("/api/auth/signup", { email, password });
+      // Automatically sign in upon successful registration
+      await get().signIn(email, password);
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "회원가입에 실패했습니다.";
       set({ error: message });
       throw new Error(message);
     }

@@ -7,7 +7,18 @@ export type WorkflowActionType =
   | "DB_INSERT"
   | "DB_UPDATE"
   | "DB_DELETE"
-  | "SHOW_ALERT";
+  | "API_CALL"
+  | "RUN_QUERY"
+  | "NAVIGATE"
+  | "SHOW_ALERT"
+  | "SHOW_TOAST"
+  | "SET_FIELD"
+  | "SET_PAGE_STATE"
+  | "SET_APP_STATE"
+  | "OPEN_MODAL"
+  | "CLOSE_MODAL"
+  | "RESET_FORM"
+  | "COPY_CLIPBOARD";
 
 export interface WorkflowAction {
   id: string;

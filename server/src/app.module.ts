@@ -7,6 +7,7 @@ import { AuthModule } from "./modules/auth/auth.module";
 import { SchemaModule } from "./modules/schema/schema.module";
 import { DatabaseModule } from "./modules/database/database.module";
 import { ProjectModule } from "./modules/project/project.module";
+import { ExportModule } from "./modules/export/export.module";
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ProjectModule } from "./modules/project/project.module";
     WorkflowModule,
     AuthModule,
     ProjectModule,
+    ExportModule,
   ],
   controllers: [],
 })

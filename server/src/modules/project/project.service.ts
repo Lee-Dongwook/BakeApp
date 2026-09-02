@@ -49,6 +49,16 @@ export class ProjectService {
     return result.rows;
   }
 
+  async findById(id: string): Promise<Project | null> {
+    const result = await this.databaseService.query<Project>(
+      `SELECT id, name, owner_id AS "ownerId", created_at AS "createdAt", updated_at AS "updatedAt"
+       FROM projects
+       WHERE id = $1`,
+      [id],
+    );
+    return result.rows[0] ?? null;
+  }
+
   async findAllAccessibleByUser(userId: string): Promise<Project[]> {
     const result = await this.databaseService.query<Project>(
       `SELECT DISTINCT p.id, p.name, p.owner_id AS "ownerId", p.created_at AS "createdAt", p.updated_at AS "updatedAt"

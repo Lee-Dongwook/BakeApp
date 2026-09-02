@@ -9,6 +9,6 @@ import { ProjectService } from "./project.service";
   imports: [AuthModule],
   controllers: [ProjectController],
   providers: [ProjectService, ProjectDocumentService, ProjectMemberService],
-  exports: [ProjectService],
+  exports: [ProjectService, ProjectDocumentService],
 })
 export class ProjectModule {}

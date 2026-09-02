@@ -1,12 +1,19 @@
-import { Controller, Post, Body } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse } from "@nestjs/swagger";
+import { Controller, Post, Body, UseGuards, Req } from "@nestjs/common";
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
 import { WorkflowService } from "./workflow.service";
 import { WorkflowPayload } from "./workflow.interface";
+import { AuthGuard } from "../auth/auth.guard";
+import { ProjectService } from "../project/project.service";
 
 @ApiTags("Workflow Engine (액션 인터프리터)")
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller("api/workflow")
 export class WorkflowController {
-  constructor(private readonly workflowService: WorkflowService) {}
+  constructor(
+    private readonly workflowService: WorkflowService,
+    private readonly projectService: ProjectService,
+  ) {}
 
   @Post("execute")
   @ApiOperation({
@@ -15,7 +22,10 @@ export class WorkflowController {
       "프론트엔드에서 트리거된 연쇄 액션 노드 트리를 백엔드에서 인터프리팅하여 DB 연동 및 클라이언트 액션을 처리합니다.",
   })
   @ApiResponse({ status: 201, description: "워크플로우 성공적 실행" })
-  async execute(@Body() payload: WorkflowPayload) {
+  async execute(@Body() payload: WorkflowPayload, @Req() req: any) {
+    if (payload.projectId) {
+      await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
+    }
     return this.workflowService.executeWorkflow(payload);
   }
 }

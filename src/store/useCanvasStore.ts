@@ -96,6 +96,52 @@ export const deleteNodeFromTree = (
   return hasChanged ? { ...node, children } : node;
 };
 
+export const moveNodeInTree = (
+  rootNode: ComponentNode,
+  targetId: string,
+  direction: "up" | "down",
+): ComponentNode => {
+  const parent = findParentNode(rootNode, targetId);
+  if (!parent || !parent.children) return rootNode;
+
+  const index = parent.children.findIndex(
+    (child) => typeof child !== "string" && child.id === targetId,
+  );
+  if (index === -1) return rootNode;
+
+  const targetIndex = direction === "up" ? index - 1 : index + 1;
+  if (targetIndex < 0 || targetIndex >= parent.children.length) return rootNode;
+
+  const newChildren = [...parent.children];
+  const [moved] = newChildren.splice(index, 1);
+  newChildren.splice(targetIndex, 0, moved);
+
+  return updateNodeInTree(rootNode, parent.id, (p) => ({
+    ...p,
+    children: newChildren,
+  }));
+};
+
+export interface FlattenedNode {
+  node: ComponentNode;
+  depth: number;
+  parentId: string | null;
+}
+
+export const flattenTree = (
+  root: ComponentNode,
+  depth = 0,
+  parentId: string | null = null,
+): FlattenedNode[] => {
+  const result: FlattenedNode[] = [{ node: root, depth, parentId }];
+  for (const child of root.children ?? []) {
+    if (typeof child !== "string") {
+      result.push(...flattenTree(child, depth + 1, root.id));
+    }
+  }
+  return result;
+};
+
 const updateChildren = (
   node: ComponentNode,
   updater: (child: ComponentNode) => ComponentNode,

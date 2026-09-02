@@ -1,36 +1,67 @@
 # 🍞 BakeApp Studio
 
-BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설계하는 노코드 앱 빌더 프로토타입입니다. 로그인한 사용자가 프로젝트를 만들고, 화면을 편집하며, 프로젝트별 테이블과 데이터를 연결할 수 있습니다.
+BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설계·제작·내보내는 고성능 노코드 앱 빌더입니다. 로그인한 사용자가 프로젝트를 만들고, 화면을 드래그 앤 드롭으로 편집하며, 프로젝트별 테이블과 동적 데이터를 실시간으로 바인딩하여 실행 가능한 웹 앱으로 내보낼 수 있습니다.
 
-## 현재 구현 범위
+---
 
-- **인증과 프로젝트**
-  - 자체 이메일/비밀번호 로그인과 JWT 기반 브라우저 세션 확인
-  - 15분 access token과 회전형 HttpOnly refresh token 기반 세션 갱신
-  - 프로젝트 생성·조회·이름 변경·삭제
-  - `owner`, `editor`, `viewer` 멤버 역할
-- **프로젝트 저장**
-  - 페이지 AST와 API 정의를 프로젝트 문서(JSONB)로 저장·복원
-  - 변경됨 표시와 1초 디바운스 자동 저장
-- **화면 편집**
-  - `View`, `Text`, `Button`, `TextInput`, `Data List` 드래그 앤 드롭
-  - 페이지 추가·삭제, 속성·스타일 편집, 미리보기
-- **데이터**
-  - 프로젝트별 PostgreSQL 테이블·컬럼 생성
-  - 테이블/컬럼 목록, 최근 레코드 5건 미리보기, 동적 레코드 등록
-  - `Data List`가 미리보기 모드에서 테이블 레코드를 표시
-- **기존 엔진**
-  - 동적 CRUD API, 워크플로우 실행기, React/React Native 코드 생성, Swagger
+## ✨ 주요 기능 및 구현 범위
 
-## 기술 스택
+### 1. 인증 및 프로젝트 관리
+- **자체 인증 & 세션 갱신**: scrypt 해시 기반 회원가입/로그인, 15분 Access Token 및 HttpOnly Refresh Token 자동 회전 갱신
+- **역할 기반 접근 제어 (RBAC)**: `owner`, `editor`, `viewer` 권한 모델
+- **프로젝트 대시보드**: 프로젝트 생성, 실시간 조회, 이름 변경 및 삭제
 
-- Frontend: React, TypeScript, Vite, Zustand, Tailwind CSS
-- Backend: NestJS, TypeScript
-- Database: PostgreSQL
-- Authentication: NestJS 자체 인증, scrypt 비밀번호 해시, HS256 JWT
-- Database access: `pg`
+### 2. 고도화된 시각적 화면 편집기 (Canvas Builder)
+- **풍부한 컴포넌트 팔레트**:
+  - 📦 **레이아웃**: `Box (View)`, `Card (카드)`, `Form (양식)`, `Divider (구분선)`
+  - ✏️ **텍스트 & 미디어**: `Text (텍스트)`, `Image (이미지)`, `Badge (상태 뱃지)`
+  - 🔘 **양식 & 컨트롤**: `TextInput (입력)`, `Select (드롭다운)`, `Checkbox (체크박스)`, `Button (버튼)`
+  - 🗄️ **데이터 바인딩**: `Data List (동적 목록)`, `Table (데이터 그리드)`
+- **반응형 뷰포트 전환**:
+  - 📱 Mobile Portrait (375px)
+  - 📱 Mobile Large (430px)
+  - 💻 Tablet (768px)
+  - 🖥️ Desktop / Responsive (1060px)
+- **캔버스 줌 & 스케일**: 50%, 75%, 100%, 125% 확대/축소
+- **트리 및 레이어 탐색기 (Layers Panel)**: 컴포넌트 계층 트리 시각화, 요소 선택, 위/아래 순서 변경, 복제, 삭제
+- **히스토리 Undo / Redo**: 30단계 실행 취소(`⌘Z`) 및 다시 실행(`⌘⇧Z` / `⌘Y`) 지원
 
-## 시작하기
+### 3. PostgreSQL 동적 스키마 & 데이터 엔진
+- **Dynamic DB Builder**: 프로젝트별 테이블 및 컬럼(타입/필수 여부) 시각적 생성
+- **실시간 데이터 바인딩**: `Data List` 및 양식 컴포넌트에서 실시간 스키마 드롭다운 선택
+- **CRUD 레코드 관리**: 빌더 내에서 직접 레코드 등록 및 최근 5건 미리보기
+
+### 4. 워크플로우 엔진 (Workflow & Action Chaining)
+- **다양한 액션 지원**:
+  - `DB_INSERT`: 테이블에 레코드 등록
+  - `DB_UPDATE`: 대상 테이블 레코드 수정
+  - `DB_DELETE`: 대상 테이블 레코드 삭제
+  - `API_CALL`: 외부 엔드포인트 REST API 호출
+  - `RUN_QUERY`: 프로젝트에 저장된 API Query 실행
+  - `NAVIGATE`: 페이지 전환 및 외부 링크 이동
+  - `SHOW_TOAST` / `SHOW_ALERT`: 인앱 토스트 알림 표시
+  - `SET_FIELD`: 런타임 폼 필드 상태 변경
+- **동적 변수 바인딩**: `{{ form.name }}`, `{{ params.id }}`, `{{ steps.act_1.id }}` 자동 치환
+- **트리거**: 클릭(`ON_CLICK`), 페이지 로드, 양식 제출
+
+### 5. 코드 생성 및 프로젝트 전체 Zip 내보내기
+- **React 19 + Tailwind CSS TSX 코드 생성**: 최신 React 컴포넌트 구조로 클린 코드 출력
+- **React Native 코드 생성**: 네이티브 컴포넌트(`View`, `Text`, `TextInput`, `Pressable`, `Image`, `Switch`) 호환 소스 출력
+- **원클릭 전체 프로젝트 Zip 내보내기 (`GET /api/export/:projectId/zip`)**:
+  - `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/App.tsx`, `src/pages/*.tsx`를 포함한 완전한 독립 실행형 Vite 프로젝트 아카이브 즉시 다운로드
+
+---
+
+## 🛠️ 기술 스택
+
+- **Frontend**: React 19, TypeScript, Vite, Zustand, Tailwind CSS v4, @dnd-kit, Lucide Icons, PrismJS
+- **Backend**: NestJS, TypeScript, Swagger (OpenAPI 3.0), JSZip
+- **Database**: PostgreSQL (`pg` Connection Pool)
+- **Auth & Security**: scrypt Password Hash, HS256 JWT, HttpOnly Cookie Token Rotation
+
+---
+
+## 🚀 시작하기
 
 ### 1. 의존성 설치
 
@@ -41,144 +72,82 @@ pnpm --dir server install
 
 ### 2. 환경 변수 설정
 
-로컬에서 백엔드를 직접 실행할 때는 예시 파일을 복사해 `server/.env`를 만듭니다. 실제 비밀값은 저장소에 커밋하지 마세요.
-
 ```bash
 cp server/.env.example server/.env
 ```
 
-`DATABASE_URL`에는 실행할 PostgreSQL 주소를 넣습니다. 로컬 DB라면 예시의 `localhost:5432`를 사용하고, Docker Compose로 DB를 함께 실행한다면 API 컨테이너에서는 `db:5432`를 사용합니다. `JWT_SECRET`은 32자 이상 임의 값이 필수이며, 다음 명령으로 만들 수 있습니다.
-
-```bash
-openssl rand -base64 48
-```
-
-`DATABASE_SSL=true`은 TLS 연결이 필요한 경우에만 추가하세요. `JWT_SECRET`은 운영 환경에서 반드시 충분히 긴 임의 값으로 설정하며, 저장소에 커밋하지 않습니다.
-`FRONTEND_ORIGIN`은 refresh token 쿠키를 허용할 프론트엔드 주소입니다. 배포 환경에서는 실제 HTTPS 프론트 주소로 지정하세요.
-
-프론트가 다른 서버 주소를 사용해야 하면 루트에 `.env.local`을 만들 수 있습니다.
+`server/.env` 파일에서 `DATABASE_URL`, `JWT_SECRET`, `FRONTEND_ORIGIN`을 확인합니다.
 
 ```env
-VITE_API_BASE_URL=http://localhost:3000
+PORT=3000
+DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bakeapp
+JWT_SECRET=your-32-characters-or-more-random-secret-key-here
+FRONTEND_ORIGIN=http://localhost:5173
 ```
 
 ### 3. 데이터베이스 마이그레이션
 
-PostgreSQL 클라이언트 또는 사용하는 PostgreSQL 마이그레이션 도구에서 아래 파일을 **순서대로 한 번씩** 실행합니다.
+순서대로 SQL 파일을 실행합니다.
 
 1. `server/migrations/20260831_create_users.sql`
 2. `server/migrations/20260901_create_projects.sql`
 3. `server/migrations/20260901_create_project_documents.sql`
 4. `server/migrations/20260901_create_project_members.sql`
-5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql` (기존 설치 환경만)
+5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql`
 6. `server/migrations/20260903_create_refresh_tokens.sql`
 
-이 마이그레이션은 `users`, `refresh_tokens`, `projects`, `project_documents`, `project_members` 테이블을 생성합니다. 프로젝트 권한은 Supabase RLS가 아닌 백엔드의 인증 가드와 프로젝트 권한 검사로 처리합니다.
-
-### Docker로 전체 백엔드 실행
-
-PostgreSQL을 로컬에 설치하거나 `DATABASE_URL`을 직접 구성하지 않아도 됩니다.
-
-```bash
-docker compose up --build
-```
-
-기본값 대신 비밀번호나 JWT 키를 바꾸려면 먼저 루트 예시 파일을 복사해 값을 수정합니다.
-
-```bash
-cp .env.example .env
-docker compose up --build
-```
-
-Compose는 PostgreSQL, API, 마이그레이션 초기화를 함께 실행합니다. API는 `http://localhost:3000/api`에서 사용할 수 있고, DB 데이터는 Docker 볼륨 `postgres-data`에 보관됩니다.
-
-Docker Compose로 API를 실행 중이라면, 프론트엔드는 별도 터미널에서 아래 명령으로만 실행합니다. `pnpm dev`는 API도 한 번 더 실행하려 하므로 사용하지 않습니다.
-
-```bash
-pnpm dev:client
-```
-
-기본 계정 정보와 JWT 키는 **개발용**입니다. 운영 환경에서는 `POSTGRES_PASSWORD`, `DATABASE_URL`, `JWT_SECRET`을 안전한 배포 환경의 시크릿으로 설정하세요. 초기화 SQL은 빈 볼륨에서만 실행되므로, 이미 생성된 DB에는 새 마이그레이션을 별도로 적용해야 합니다.
-
 ### 4. 개발 서버 실행
-
-로컬 PostgreSQL을 직접 준비하고 마이그레이션까지 적용한 경우에는 프론트와 백엔드를 함께 실행할 수 있습니다.
 
 ```bash
 pnpm dev
 ```
 
-- Frontend: Vite가 출력하는 주소(기본값 `http://localhost:5173`)
-- Backend / Swagger: `http://localhost:3000/api`
+- Frontend: `http://localhost:5173`
+- Backend API / Swagger: `http://localhost:3000/api`
 
-## 사용 흐름
+---
 
-1. `POST /api/auth/signup`으로 계정을 생성한 뒤 해당 이메일과 비밀번호로 로그인합니다.
-2. 프로젝트 대시보드에서 예: `재고 관리` 프로젝트를 만듭니다.
-3. 빌더에서 **DB Builder**를 열고 예: `products` 테이블과 `title`, `price` 컬럼을 만듭니다.
-4. DB Builder의 테이블을 선택해 레코드를 등록하고 미리보기로 확인합니다.
-5. 팔레트에서 **Data List**를 캔버스에 추가합니다.
-6. 속성 패널에서 테이블 이름(`products`)과 표시 컬럼(`title`)을 설정합니다.
-7. **Live Preview**에서 실제 레코드를 확인합니다. 편집 내용은 자동 저장됩니다.
+## ⌨️ 단축키 안내
 
-## 권한 기준
+| 단축키 | 설명 |
+|---|---|
+| `⌘ / Ctrl + S` | 프로젝트 저장 |
+| `⌘ / Ctrl + Z` | 실행 취소 (Undo) |
+| `⌘ / Ctrl + ⇧ + Z` 또는 `Ctrl + Y` | 다시 실행 (Redo) |
+| `⌘ / Ctrl + D` | 선택한 컴포넌트 복제 |
+| `V / C / T / B / I / S / L` | View · Card · Text · Button · Input · Select · List 빠른 추가 |
+| `Delete` / `Backspace` | 선택한 컴포넌트 삭제 |
+| `?` | 단축키 도움말 모달 열기/닫기 |
 
-| 역할   | 프로젝트/문서 조회 | 문서·테이블·레코드 변경 | 멤버 관리·프로젝트 삭제 |
-| ------ | ------------------ | ----------------------- | ----------------------- |
-| owner  | 가능               | 가능                    | 가능                    |
-| editor | 가능               | 가능                    | 불가                    |
-| viewer | 가능               | 불가                    | 불가                    |
+---
 
-동적 스키마와 CRUD API는 인증 토큰 및 프로젝트 권한을 확인합니다. 다른 프로젝트 ID를 임의로 넣어도 접근할 수 없습니다.
+## 📡 주요 API 엔드포인트
 
-## 주요 API
+| 카테고리 | 메서드 / 경로 | 설명 |
+|---|---|---|
+| **인증** | `POST /api/auth/signup` | 회원가입 |
+| | `POST /api/auth/signin` | 로그인 & 토큰 발급 |
+| | `POST /api/auth/refresh` | 토큰 갱신 |
+| | `POST /api/auth/logout` | 로그아웃 |
+| **프로젝트** | `GET, POST /api/projects` | 프로젝트 목록 및 생성 |
+| | `GET, PATCH, DELETE /api/projects/:id` | 프로젝트 상세, 이름 변경, 삭제 |
+| | `GET, PUT /api/projects/:id/document` | 프로젝트 AST 문서 조회 및 저장 |
+| **동적 스키마** | `POST /api/dynamic-schema/table` | 프로젝트 테이블 및 컬럼 생성 |
+| | `GET /api/dynamic-schema/tables/:projectId` | 프로젝트 테이블 목록 조회 |
+| **동적 데이터** | `GET, POST /api/dynamic-data/:projectId/:tableName` | 동적 레코드 조회 및 추가 |
+| | `PATCH, DELETE /api/dynamic-data/:projectId/:tableName/:id` | 레코드 수정 및 삭제 |
+| **워크플로우** | `POST /api/workflow/execute` | 액션 체인 순차 실행 |
+| **컴파일/내보내기** | `POST /api/generator/compile?target=react` | 단일 화면 코드 컴파일 |
+| | `GET /api/export/:projectId/zip` | 프로젝트 전체 소스코드 zip 다운로드 |
 
-모든 프로젝트·동적 데이터 API는 `Authorization: Bearer <access-token>` 헤더가 필요합니다. access token은 15분 후 만료되며, 프론트 공통 API 클라이언트가 HttpOnly refresh token 쿠키로 자동 갱신 후 원래 요청을 한 번 재시도합니다. refresh token은 서버에 해시로만 저장되고 갱신할 때마다 기존 토큰이 폐기됩니다.
+---
 
-| 목적                          | 메서드 / 경로                                                              |
-| ----------------------------- | -------------------------------------------------------------------------- |
-| 로그인 / 세션 갱신 / 로그아웃 | `POST /api/auth/signin`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
-| 프로젝트 생성·목록            | `POST`, `GET /api/projects`                                                |
-| 프로젝트 상세·이름 변경·삭제  | `GET`, `PATCH`, `DELETE /api/projects/:id`                                 |
-| 편집 문서 조회·저장           | `GET`, `PUT /api/projects/:id/document`                                    |
-| 멤버 조회·추가/역할 변경      | `GET`, `POST /api/projects/:id/members`                                    |
-| 테이블 생성·컬럼 추가         | `POST /api/dynamic-schema/table`, `POST /api/dynamic-schema/column`        |
-| 프로젝트 테이블 목록          | `GET /api/dynamic-schema/tables/:projectId`                                |
-| 동적 레코드 CRUD              | `/api/dynamic-data/:projectId/:tableName`                                  |
-
-전체 API 명세는 Swagger에서 확인할 수 있습니다.
-
-## 검증 명령
+## 🔍 검증 및 빌드 명령
 
 ```bash
+# 클라이언트 타입 검사 및 프로덕션 빌드
 pnpm build
+
+# 백엔드 프로덕션 빌드
 pnpm --dir server build
 ```
-
-현재 자동화된 E2E 테스트는 아직 없습니다. 위의 “사용 흐름”을 따라 로그인, 프로젝트 생성, 테이블/레코드 생성, `Data List` 미리보기를 수동으로 확인할 수 있습니다.
-
-## 프로젝트 구조
-
-```text
-bake/
-├── src/
-│   ├── components/          # 로그인, 프로젝트 대시보드, 캔버스, DB Builder
-│   └── store/               # 인증, 프로젝트, 편집 문서, 페이지/API 상태
-├── server/
-│   ├── migrations/          # Supabase/PostgreSQL 마이그레이션 SQL
-│   └── src/modules/
-│       ├── auth/            # Supabase 인증과 권한 검증
-│       ├── project/         # 프로젝트, 멤버, 편집 문서
-│       ├── dynamic-schema/  # 프로젝트별 테이블/컬럼 생성 및 목록
-│       ├── dynamic-data/    # 프로젝트별 CRUD API
-│       ├── workflow/        # 워크플로우 실행
-│       └── generator/       # 코드 생성
-└── docs/                    # 제품 계획과 분석 문서
-```
-
-## 다음 우선순위
-
-- `Data List`의 테이블·컬럼을 수동 입력 대신 선택 목록으로 설정
-- 폼 컴포넌트와 Create/Update/Delete 워크플로우 연결
-- API 정의와 워크플로우 편집 상태까지 프로젝트 문서로 완전 저장
-- Preview/Published 분리 및 웹 배포 파이프라인

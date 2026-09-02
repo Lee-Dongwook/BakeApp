@@ -93,7 +93,11 @@ export const PropertyInspector = () => {
               updateNodeTextContent={updateNodeTextContent}
             />
           ) : (
-            <WorkflowEditor actions={actions} onSave={saveActions} />
+            <WorkflowEditor
+              actions={actions}
+              tables={tables}
+              onSave={saveActions}
+            />
           )}
         </div>
       </div>
