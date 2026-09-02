@@ -117,16 +117,16 @@ pnpm dev
 
 모든 프로젝트·동적 데이터 API는 `Authorization: Bearer <access-token>` 헤더가 필요합니다. access token은 15분 후 만료되며, 프론트 공통 API 클라이언트가 HttpOnly refresh token 쿠키로 자동 갱신 후 원래 요청을 한 번 재시도합니다. refresh token은 서버에 해시로만 저장되고 갱신할 때마다 기존 토큰이 폐기됩니다.
 
-| 목적                         | 메서드 / 경로                                                       |
-| ---------------------------- | ------------------------------------------------------------------- |
+| 목적                          | 메서드 / 경로                                                              |
+| ----------------------------- | -------------------------------------------------------------------------- |
 | 로그인 / 세션 갱신 / 로그아웃 | `POST /api/auth/signin`, `POST /api/auth/refresh`, `POST /api/auth/logout` |
-| 프로젝트 생성·목록           | `POST`, `GET /api/projects`                                         |
-| 프로젝트 상세·이름 변경·삭제 | `GET`, `PATCH`, `DELETE /api/projects/:id`                          |
-| 편집 문서 조회·저장          | `GET`, `PUT /api/projects/:id/document`                             |
-| 멤버 조회·추가/역할 변경     | `GET`, `POST /api/projects/:id/members`                             |
-| 테이블 생성·컬럼 추가        | `POST /api/dynamic-schema/table`, `POST /api/dynamic-schema/column` |
-| 프로젝트 테이블 목록         | `GET /api/dynamic-schema/tables/:projectId`                         |
-| 동적 레코드 CRUD             | `/api/dynamic-data/:projectId/:tableName`                           |
+| 프로젝트 생성·목록            | `POST`, `GET /api/projects`                                                |
+| 프로젝트 상세·이름 변경·삭제  | `GET`, `PATCH`, `DELETE /api/projects/:id`                                 |
+| 편집 문서 조회·저장           | `GET`, `PUT /api/projects/:id/document`                                    |
+| 멤버 조회·추가/역할 변경      | `GET`, `POST /api/projects/:id/members`                                    |
+| 테이블 생성·컬럼 추가         | `POST /api/dynamic-schema/table`, `POST /api/dynamic-schema/column`        |
+| 프로젝트 테이블 목록          | `GET /api/dynamic-schema/tables/:projectId`                                |
+| 동적 레코드 CRUD              | `/api/dynamic-data/:projectId/:tableName`                                  |
 
 전체 API 명세는 Swagger에서 확인할 수 있습니다.
 
