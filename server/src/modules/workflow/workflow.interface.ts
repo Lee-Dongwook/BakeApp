@@ -11,9 +11,10 @@ export interface ActionNode {
   type: ActionType;
   params: {
     tableName?: string;
+    recordId?: string;
     data?: Record<string, any>;
     url?: string;
-    method?: "GET" | "POST";
+    method?: "GET" | "POST" | "PUT" | "DELETE";
     targetPage?: string;
     message?: string;
   };

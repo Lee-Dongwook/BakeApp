@@ -29,22 +29,24 @@ export class WorkflowService {
       }
 
       case "DB_UPDATE": {
-        if (!params.tableName || !params.data || !params.data.id) {
+        const recordId = params.recordId || params.data?.id;
+        if (!params.tableName || !recordId || !params.data) {
           throw new Error(
             "DB_UPDATE 필수 파라미터(tableName, data.id)가 누락되었습니다.",
           );
         }
-        const { id, ...updatePayload } = params.data;
+        const { id, ...updatePayload } =
+          typeof params.data === "object" ? params.data : {};
         return await this.dataService.update(
           projectId,
           params.tableName,
-          id,
+          String(recordId),
           updatePayload,
         );
       }
 
       case "DB_DELETE": {
-        if (!params.tableName || !params.data?.id) {
+        if (!params.tableName || !params.recordId) {
           throw new Error(
             "DB_DELETE 필수 파라미터(tableName, data.id)가 누락되었습니다.",
           );
@@ -52,7 +54,7 @@ export class WorkflowService {
         return await this.dataService.remove(
           projectId,
           params.tableName,
-          params.data.id,
+          String(params.recordId),
         );
       }
 
