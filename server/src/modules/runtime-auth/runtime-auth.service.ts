@@ -46,7 +46,7 @@ export class RuntimeAuthService {
       created_Date: Date;
     }>(
       `INSERT INTO runtime_users (project_id, email, password_hash, role, metadata)
-        VALUES($1, $2, $3, $4, $5:jsonb)
+        VALUES($1, $2, $3, $4, $5::jsonb)
         RETURNING id, email, role, created_at`,
       [
         projectId,
@@ -101,6 +101,7 @@ export class RuntimeAuthService {
 
     const accessToken = this.jwtService.sign(payload, {
       expiresIn: "7d",
+      secret: this.getJwtSecret(),
     });
 
     return {
@@ -116,7 +117,9 @@ export class RuntimeAuthService {
 
   async validateToken(token: string): Promise<RuntimeJwtPayload> {
     try {
-      const payload = this.jwtService.verify<RuntimeJwtPayload>(token);
+      const payload = this.jwtService.verify<RuntimeJwtPayload>(token, {
+        secret: this.getJwtSecret(),
+      });
       if (payload.type !== "RUNTIME_USER") {
         throw new UnauthorizedException("유효하지 않은 Runtime 토큰입니다.");
       }
@@ -124,5 +127,15 @@ export class RuntimeAuthService {
     } catch {
       throw new UnauthorizedException("토큰 인증 실패 또는 만료되었습니다.");
     }
+  }
+
+  private getJwtSecret(): string {
+    const secret = process.env.JWT_SECRET;
+    if (!secret || secret.length < 32) {
+      throw new UnauthorizedException(
+        "Runtime JWT를 사용하려면 32자 이상의 JWT_SECRET이 필요합니다.",
+      );
+    }
+    return secret;
   }
 }

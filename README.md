@@ -111,25 +111,27 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 - `audit_logs_user_created_at_idx` — `(user_id, created_at DESC)`
 - `audit_logs_target_record_idx` — `(target_table, record_id)`
 
-#### 적용 상태와 다음 연동 작업
+#### 적용 상태
 
-마이그레이션과 tbls 문서는 반영되어 있습니다. `AuditService`와 `AuditInterceptor`도 구현되어 있지만, 현재 `AppModule`에는 아직 등록되지 않았습니다. 실제 API 요청에 로그를 남기려면 다음 작업이 추가로 필요합니다.
-
-1. `AuditModule`을 만들고 `AuditService`와 `AuditInterceptor`를 provider로 등록합니다.
-2. `AppModule`에서 `AuditModule`을 import합니다.
-3. 필요한 컨트롤러 또는 전역 범위에 `AuditInterceptor`를 적용합니다.
+`AuditModule`은 `AppModule`에 등록되어 있습니다. 감사 로그를 실제 요청에 남길 범위를 정한 뒤, 필요한 컨트롤러 또는 전역 범위에 `AuditInterceptor`를 적용하면 됩니다.
 
 감사 로그 기록 실패는 원래 API 처리 결과를 막지 않고 서버 콘솔에 오류만 남기도록 설계되어 있습니다.
 
-### 9. 연동 예정 백엔드 기능
+### 9. 프로젝트 릴리즈 및 롤백
 
-다음 기능은 관련 서비스와 컨트롤러 소스가 추가되어 있으나, 현재 Nest 모듈 등록이 완료되지 않아 실행 중인 API에서는 사용할 수 없습니다.
+- **버전 스냅샷**: 프로젝트별로 증가하는 버전 번호, 이름·설명, 동적 스키마 JSON 스냅샷과 생성자를 `project_versions`에 저장
+- **프로덕션 배포 지정**: `project_deployments`에서 프로젝트별 활성 버전을 단일 행으로 관리
+- **안전한 배포 관계**: 복합 외래 키로 다른 프로젝트의 버전을 현재 프로젝트에 배포하지 못하도록 차단
+- **즉시 롤백**: 최근 버전 2개 중 직전 버전을 활성 배포 버전으로 다시 지정
 
-- **프로젝트 환경 변수**: 일반 값과 AES 암호화 Secret 값을 프로젝트별로 저장하고, 워크플로우 컨텍스트의 `env`로 주입
-- **최종 사용자 인증**: 빌더 사용자와 분리된 프로젝트별 런타임 사용자 회원가입·로그인 및 Runtime JWT 발급
-- **로컬 파일 저장소**: 프로젝트 권한에 따라 파일 업로드·다운로드·삭제, `/uploads` 정적 경로 제공
+### 10. Runtime 인증 및 프로젝트 환경 변수
 
-이 기능들은 `EnvironmentModule`, `RuntimeAuthModule`, `StorageModule`을 만들고 `AppModule`에 등록한 뒤 사용해야 합니다.
+- **최종 사용자 인증**: 빌더 사용자와 분리된 프로젝트별 런타임 사용자 회원가입·로그인 및 7일 Runtime JWT 발급
+- **Runtime Guard**: Runtime JWT를 검증한 사용자 정보를 요청의 `runtimeUser`에 주입해 런타임 API에서 사용할 수 있도록 제공
+- **프로젝트 환경 변수**: 일반 값과 AES-256-CBC 암호화 Secret 값을 프로젝트별로 저장하고, 워크플로우 실행 컨텍스트의 `env`에 복호화해 주입
+- **Secret 마스킹**: 스튜디오용 환경 변수 조회 시 Secret 값은 `********`로만 반환
+
+`EnvironmentModule`은 `WorkflowModule`에 연결되어 있고, `RuntimeAuthModule`은 `AppModule`에 등록되어 Runtime 인증 API를 제공합니다.
 
 ---
 
@@ -163,6 +165,7 @@ cp server/.env.example server/.env
 PORT=3000
 DATABASE_URL=postgresql://postgres:postgres@localhost:5432/bakeapp
 JWT_SECRET=your-32-characters-or-more-random-secret-key-here
+ENCRYPTION_SECRET=your-project-environment-encryption-secret-here
 FRONTEND_ORIGIN=http://localhost:5173
 FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 ```
@@ -178,8 +181,9 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql`
 6. `server/migrations/20260903_create_refresh_tokens.sql`
 7. `server/migrations/20260905_create_audit_logs.sql`
-8. `server/migrations/20260905_pg_crypto.sql`
-9. `server/migrations/20260905_schema_and_policies.sql`
+8. `server/migrations/20260905_create_project_releases.sql`
+9. `server/migrations/20260905_pg_crypto.sql`
+10. `server/migrations/20260905_schema_and_policies.sql`
 
 이미 실행 중인 Docker PostgreSQL에 새 마이그레이션만 적용하려면 다음 명령을 사용합니다.
 
@@ -203,6 +207,7 @@ pnpm db:doc
 - 접속 정보는 Docker Compose의 `POSTGRES_*` 환경 변수로만 전달하며, `.tbls.yml`에는 저장하지 않습니다.
 - 생성 결과는 `docs/db/README.md`와 `docs/db/schema.svg`입니다.
 - 감사 로그 테이블 상세 문서는 `docs/db/public.audit_logs.md`에서 확인할 수 있습니다.
+- 릴리즈 테이블 상세 문서는 `docs/db/public.project_versions.md`, `docs/db/public.project_deployments.md`에서 확인할 수 있습니다.
 - 별도의 로컬 `tbls` 설치는 필요하지 않습니다. 처음 실행할 때 Docker가 이미지를 내려받습니다.
 
 ### 5. 개발 서버 실행
@@ -250,6 +255,11 @@ pnpm dev
 |                     | `PATCH, DELETE /api/dynamic-data/:projectId/:tableName/:id` | 레코드 수정 및 삭제                         |
 | **관계형 쿼리**     | `POST /api/projects/:projectId/query/execute`               | 조인·필터·정렬 기반 동적 조회               |
 | **워크플로우**      | `POST /api/workflow/execute`                                | 액션 체인 순차 실행                         |
+| **Runtime 인증**    | `POST /api/runtime/:projectId/auth/signup`                  | 프로젝트 최종 사용자 회원가입               |
+|                     | `POST /api/runtime/:projectId/auth/login`                   | Runtime JWT 발급                            |
+| **릴리즈**          | `POST /api/projects/:projectId/releases`                    | 현재 상태의 릴리즈 버전 생성                |
+|                     | `POST /api/projects/:projectId/releases/:versionId/deploy`  | 특정 버전을 활성 배포 버전으로 지정         |
+|                     | `POST /api/projects/:projectId/releases/rollback`           | 직전 릴리즈 버전으로 롤백                   |
 | **컴파일/내보내기** | `POST /api/generator/compile?target=react`                  | 단일 화면 코드 컴파일                       |
 |                     | `GET /api/export/:projectId/zip`                            | 프로젝트 전체 소스코드 zip 다운로드         |
 | **Figma 가져오기**  | `POST /api/figma/import`                                    | Figma 링크 또는 fileKey를 캔버스 AST로 변환 |

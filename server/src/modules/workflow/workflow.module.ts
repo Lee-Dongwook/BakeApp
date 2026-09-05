@@ -6,9 +6,16 @@ import { WorkflowController } from "./workflow.controller";
 import { DynamicDataModule } from "../dynamic-data/dynamic-data.module";
 import { AuthModule } from "../auth/auth.module";
 import { ProjectModule } from "../project/project.module";
+import { EnvironmentModule } from "../environment/environment.module";
 
 @Module({
-  imports: [DatabaseModule, DynamicDataModule, AuthModule, ProjectModule],
+  imports: [
+    DatabaseModule,
+    DynamicDataModule,
+    AuthModule,
+    ProjectModule,
+    EnvironmentModule,
+  ],
   controllers: [WorkflowController],
   providers: [WorkflowService, ValueResolverService],
   exports: [WorkflowService, ValueResolverService],
