@@ -1,7 +1,17 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  Logger,
+  OnModuleInit,
+} from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { DynamicSwaggerService } from "../schema/dynamic-swagger.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
+import {
+  assertProjectId,
+  getProjectTablePrefix,
+  sanitizeIdentifier,
+} from "../../common/tenant-table";
 
 export interface ColumnDefinition {
   name: string;
@@ -19,7 +29,9 @@ export interface ProjectTableSummary {
 }
 
 @Injectable()
-export class DynamicSchemaService {
+export class DynamicSchemaService implements OnModuleInit {
+  private readonly logger = new Logger(DynamicSchemaService.name);
+
   constructor(
     private readonly dbService: DatabaseService,
     private readonly schemaRegistry: SchemaRegistryService,
@@ -44,22 +56,49 @@ export class DynamicSchemaService {
   }
 
   private sanitizeIdentifier(identifier: string): string {
-    const safeRegex = /^[a-z0-9_]+$/;
-    if (!safeRegex.test(identifier)) {
-      throw new BadRequestException(
-        `유효하지 않은 식별자 이름입니다: ${identifier} (영문 소문자, 숫자, _ 만 가능)`,
-      );
-    }
-
-    return identifier;
+    return sanitizeIdentifier(identifier);
   }
 
   private getProjectTablePrefix(projectId: string): string {
-    return `tenant_${projectId.replace(/-/g, "_")}_`;
+    return getProjectTablePrefix(projectId);
+  }
+
+  /** 서버 재시작 시 project_schemas에서 인메모리 레지스트리를 복원한다. */
+  async onModuleInit() {
+    try {
+      const result = await this.dbService.query<{
+        project_id: string;
+        table_name: string;
+        schema_definition: { columns: ColumnDefinition[] };
+      }>(
+        `SELECT project_id, table_name, schema_definition
+         FROM project_schemas
+         ORDER BY created_at`,
+      );
+
+      for (const row of result.rows) {
+        this.schemaRegistry.saveSchema(row.project_id, {
+          tableName: row.table_name,
+          columns: row.schema_definition?.columns ?? [],
+        });
+      }
+
+      this.logger.log(
+        `[Schema Registry] ${result.rows.length}개 동적 스키마를 복원했습니다.`,
+      );
+      await this.dynamicSwagger.refreshSwaggerDoc();
+    } catch (error) {
+      // 스키마 복원 실패가 서버 기동 자체를 막지는 않도록 한다.
+      this.logger.error(
+        `[Schema Registry] 동적 스키마 복원 실패: ${
+          error instanceof Error ? error.message : error
+        }`,
+      );
+    }
   }
 
   async getProjectTables(projectId: string): Promise<ProjectTableSummary[]> {
-    const tablePrefix = this.getProjectTablePrefix(projectId);
+    const tablePrefix = this.getProjectTablePrefix(assertProjectId(projectId));
     const tableNamePattern = `^${tablePrefix}[a-z0-9_]+$`;
     const tableResult = await this.dbService.query<{ table_name: string }>(
       `SELECT table_name
@@ -101,9 +140,12 @@ export class DynamicSchemaService {
     rawTableName: string,
     columns: ColumnDefinition[],
   ) {
-    const cleanProjectId = projectId.replace(/-/g, "_");
     const cleanTableName = this.sanitizeIdentifier(rawTableName);
-    const fullTableName = `tenant_${cleanProjectId}_${cleanTableName}`;
+    const fullTableName = `${this.getProjectTablePrefix(projectId)}${cleanTableName}`;
+
+    if (!Array.isArray(columns) || columns.length === 0) {
+      throw new BadRequestException("컬럼을 최소 1개 이상 정의해야 합니다.");
+    }
 
     let sql = `CREATE TABLE IF NOT EXISTS "${fullTableName}" (\n`;
     sql += `  "id" UUID PRIMARY KEY DEFAULT gen_random_uuid(),\n`;
@@ -157,9 +199,8 @@ export class DynamicSchemaService {
     rawTableName: string,
     column: ColumnDefinition,
   ) {
-    const cleanProjectId = projectId.replace(/-/g, "_");
     const cleanTableName = this.sanitizeIdentifier(rawTableName);
-    const fullTableName = `tenant_${cleanProjectId}_${cleanTableName}`;
+    const fullTableName = `${this.getProjectTablePrefix(projectId)}${cleanTableName}`;
 
     const colName = this.sanitizeIdentifier(column.name);
     const pgType = this.mapToPgType(column.type);
@@ -181,7 +222,12 @@ export class DynamicSchemaService {
         const currentSchema = schemaRes.rows[0]?.schema_definition || {
           columns: [],
         };
-        currentSchema.columns.push(column);
+        currentSchema.columns = [
+          ...(currentSchema.columns ?? []).filter(
+            ({ name }) => name !== column.name,
+          ),
+          column,
+        ];
 
         await client.query(
           `UPDATE project_schemas 

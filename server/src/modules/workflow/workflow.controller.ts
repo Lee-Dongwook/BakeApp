@@ -1,4 +1,11 @@
-import { Controller, Post, Body, UseGuards, Req } from "@nestjs/common";
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  Post,
+  Req,
+  UseGuards,
+} from "@nestjs/common";
 import {
   ApiBearerAuth,
   ApiBody,
@@ -72,9 +79,10 @@ export class WorkflowController {
     @Body("context") clientContext: Record<string, any> = {},
     @Req() req: any,
   ) {
-    if (payload.projectId) {
-      await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
+    if (!payload?.projectId) {
+      throw new BadRequestException("projectId는 필수입니다.");
     }
+    await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
 
     const context = {
       ...clientContext,

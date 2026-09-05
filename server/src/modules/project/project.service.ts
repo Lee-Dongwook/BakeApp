@@ -37,7 +37,10 @@ export class ProjectService {
         `INSERT INTO project_documents (project_id, document)
          VALUES ($1, $2)
          ON CONFLICT (project_id) DO NOTHING`,
-        [project.id, JSON.stringify({ nodes: [], edges: [] })],
+        [
+          project.id,
+          JSON.stringify({ pages: [], queries: [], workflows: [] }),
+        ],
       );
 
       return project;

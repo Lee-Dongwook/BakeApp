@@ -12,11 +12,11 @@ import {
 import { ApiTags, ApiOperation, ApiBearerAuth } from "@nestjs/swagger";
 import {
   AuthService,
-  AuthCredentialsDto,
   REFRESH_TOKEN_COOKIE,
   REFRESH_TOKEN_TTL_MS,
 } from "./auth.service";
 import { AuthGuard } from "./auth.guard";
+import type { AuthCredentialsDto } from "./interfaces/auth.interface";
 
 @ApiTags("Auth & Security (인증 및 접근 제어)")
 @Controller("api/auth")

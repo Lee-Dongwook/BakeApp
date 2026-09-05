@@ -4,6 +4,17 @@ import { ProjectService } from "../project/project.service";
 import { ProjectDocumentService } from "../project/project-document.service";
 import { GeneratorService } from "../generator/generator.service";
 
+/** 생성 산출물에 프로젝트 이름을 넣을 때 HTML/JSX 주입을 막는다. */
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;")
+    .replace(/[{}]/g, "");
+}
+
 @Injectable()
 export class ExportService {
   constructor(
@@ -18,6 +29,7 @@ export class ExportService {
       throw new NotFoundException(`프로젝트 [${projectId}]를 찾을 수 없습니다.`);
     }
 
+    const safeProjectName = escapeHtml(project.name);
     const { document } = await this.projectDocumentService.findByProjectId(projectId);
     const rawPages = (document.pages as any[]) || [];
     const pages = rawPages.length > 0
@@ -111,7 +123,7 @@ export default defineConfig({
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${project.name}</title>
+    <title>${safeProjectName}</title>
   </head>
   <body class="bg-slate-50 text-slate-900 antialiased min-h-screen">
     <div id="root"></div>
@@ -168,7 +180,7 @@ export default function App() {
       <header className="bg-slate-900 text-white px-6 py-3 flex items-center justify-between shadow">
         <div className="flex items-center space-x-3">
           <span className="text-xl">🍞</span>
-          <h1 className="font-bold text-sm tracking-wide">${project.name}</h1>
+          <h1 className="font-bold text-sm tracking-wide">${safeProjectName}</h1>
         </div>
         <nav className="flex items-center space-x-1">
           {pages.map((p) => (
@@ -204,7 +216,7 @@ export default function App() {
 `;
     zip.file("src/App.tsx", appTsx);
 
-    const readmeMd = `# ${project.name} (BakeApp Export)
+    const readmeMd = `# ${safeProjectName} (BakeApp Export)
 
 이 프로젝트는 **BakeApp Studio**에서 자동 생성되어 내보내진 독립 실행형 React + Vite 웹 애플리케이션입니다.
 

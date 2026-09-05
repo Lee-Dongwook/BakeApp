@@ -2,6 +2,7 @@ import { Injectable, BadRequestException } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { DynamicDataService } from "../dynamic-data/dynamic-data.service";
 import { ActionNode, WorkflowPayload } from "./workflow.interface";
+import { SqlExecutor } from "../../common/tenant-table";
 import { ValueResolverService } from "./value-resolver.service";
 
 @Injectable()
@@ -15,7 +16,7 @@ export class WorkflowService {
   private async executeSingleAction(
     projectId: string,
     action: ActionNode,
-    client?: any,
+    client?: SqlExecutor,
   ) {
     const { type, params } = action;
 
@@ -27,22 +28,11 @@ export class WorkflowService {
           );
         }
 
-        if (
-          client &&
-          typeof (this.dataService as any).createWithClient === "function"
-        ) {
-          return await (this.dataService as any).createWithClient(
-            client,
-            projectId,
-            params.tableName,
-            params.data,
-          );
-        }
-
         return await this.dataService.create(
           projectId,
           params.tableName,
           params.data,
+          client,
         );
       }
 
@@ -56,24 +46,12 @@ export class WorkflowService {
         const { id, ...updatePayload } =
           typeof params.data === "object" ? params.data : {};
 
-        if (
-          client &&
-          typeof (this.dataService as any).updateWithClient === "function"
-        ) {
-          return await (this.dataService as any).updateWithClient(
-            client,
-            projectId,
-            params.tableName,
-            String(recordId),
-            updatePayload,
-          );
-        }
-
         return await this.dataService.update(
           projectId,
           params.tableName,
           String(recordId),
           updatePayload,
+          client,
         );
       }
 
@@ -84,22 +62,11 @@ export class WorkflowService {
           );
         }
 
-        if (
-          client &&
-          typeof (this.dataService as any).removeWithClient === "function"
-        ) {
-          return await (this.dataService as any).removeWithClient(
-            client,
-            projectId,
-            params.tableName,
-            String(params.recordId),
-          );
-        }
-
         return await this.dataService.remove(
           projectId,
           params.tableName,
           String(params.recordId),
+          client,
         );
       }
 
@@ -168,7 +135,7 @@ export class WorkflowService {
               ? params.data
               : JSON.stringify(params.data);
         }
-        const response = await fetch(params.url, fetchOptions);
+        const response = await fetch(this.assertSafeUrl(params.url), fetchOptions);
         const resText = await response.text();
         try {
           return JSON.parse(resText);
@@ -188,6 +155,73 @@ export class WorkflowService {
       default:
         throw new Error(`지원하지 않는 액션 타입입니다: ${type}`);
     }
+  }
+
+  /**
+   * API_CALL이 내부망/메타데이터 서버로 향하지 않도록 막는다.
+   * WORKFLOW_ALLOWED_HOSTS(콤마 구분)를 설정하면 해당 호스트만 허용한다.
+   */
+  private assertSafeUrl(rawUrl: string): string {
+    let url: URL;
+    try {
+      url = new URL(rawUrl);
+    } catch {
+      throw new Error(`API_CALL url 형식이 올바르지 않습니다: ${rawUrl}`);
+    }
+
+    if (url.protocol !== "http:" && url.protocol !== "https:") {
+      throw new Error("API_CALL은 http/https만 지원합니다.");
+    }
+
+    const allowList = (process.env.WORKFLOW_ALLOWED_HOSTS || "")
+      .split(",")
+      .map((host) => host.trim().toLowerCase())
+      .filter(Boolean);
+    const hostname = url.hostname.toLowerCase().replace(/^\[|\]$/g, "");
+
+    if (allowList.length > 0) {
+      if (!allowList.includes(hostname)) {
+        throw new Error(`허용되지 않은 API_CALL 대상 호스트입니다: ${hostname}`);
+      }
+      return url.toString();
+    }
+
+    if (WorkflowService.isPrivateHost(hostname)) {
+      throw new Error(`내부 네트워크 주소로는 요청할 수 없습니다: ${hostname}`);
+    }
+
+    return url.toString();
+  }
+
+  private static isPrivateHost(hostname: string): boolean {
+    if (
+      hostname === "localhost" ||
+      hostname === "::1" ||
+      hostname.endsWith(".localhost") ||
+      hostname.endsWith(".local") ||
+      hostname.endsWith(".internal")
+    ) {
+      return true;
+    }
+
+    // IPv6 유니크 로컬(fc00::/7) 및 링크 로컬(fe80::/10)
+    if (/^f[cd][0-9a-f]{2}:/.test(hostname) || /^fe[89ab][0-9a-f]:/.test(hostname)) {
+      return true;
+    }
+
+    const ipv4 = hostname.match(/^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/);
+    if (!ipv4) return false;
+
+    const [a, b] = ipv4.slice(1).map(Number);
+    return (
+      a === 0 ||
+      a === 10 ||
+      a === 127 ||
+      (a === 169 && b === 254) || // 클라우드 메타데이터
+      (a === 172 && b >= 16 && b <= 31) ||
+      (a === 192 && b === 168) ||
+      (a === 100 && b >= 64 && b <= 127)
+    );
   }
 
   async executeWorkflow(

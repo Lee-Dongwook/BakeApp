@@ -13,6 +13,7 @@ import {
 } from "node:crypto";
 import { promisify } from "node:util";
 import { DatabaseService } from "../database/database.service";
+import { TenantPolicyService } from "./tenant-policy.service";
 import type {
   AuthCredentialsDto,
   AuthUser,
@@ -29,7 +30,10 @@ export const REFRESH_TOKEN_COOKIE = "bakeapp_refresh_token";
 
 @Injectable()
 export class AuthService implements OnModuleInit {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly tenantPolicyService: TenantPolicyService,
+  ) {}
 
   onModuleInit() {
     this.getJwtSecret();
@@ -47,9 +51,12 @@ export class AuthService implements OnModuleInit {
         [email, passwordHash],
       );
 
+      const user = result.rows[0];
+      await this.tenantPolicyService.initializeTenantLimits(user.id);
+
       return {
         message: "회원가입 성공",
-        user: result.rows[0],
+        user,
       };
     } catch (error: any) {
       if (error?.code === "23505") {
@@ -174,10 +181,26 @@ export class AuthService implements OnModuleInit {
     userId: string,
     projectId: string,
   ): Promise<ProjectRole | null> {
+    // project_members.role은 소문자('owner'|'editor'|'viewer')로 저장되고
+    // ProjectRole 타입은 대문자이므로 여기서 정규화한다.
+    // 소유자가 멤버로도 등록된 경우 가장 높은 역할 하나만 돌려준다.
     const result = await this.databaseService.query<{ role: ProjectRole }>(
-      `SELECT role FROM project_members WHERE user_id = $1 AND project_id = $2
-     UNION
-     SELECT 'OWNER' as role FROM projects WHERE id = $2 AND owner_id = $1`,
+      `SELECT role FROM (
+         SELECT UPPER(role) AS role
+         FROM project_members
+         WHERE user_id = $1 AND project_id = $2
+         UNION
+         SELECT 'OWNER' AS role
+         FROM projects
+         WHERE id = $2 AND owner_id = $1
+       ) AS roles
+       ORDER BY CASE role
+         WHEN 'OWNER' THEN 0
+         WHEN 'EDITOR' THEN 1
+         WHEN 'VIEWER' THEN 2
+         ELSE 3
+       END
+       LIMIT 1`,
       [userId, projectId],
     );
 
@@ -198,12 +221,13 @@ export class AuthService implements OnModuleInit {
       VIEWER: 1,
     };
 
-    const userLevel = roleHierarchy[userRole];
-    const minRequiredLevel = Math.min(
-      ...requiredRoles.map((r) => roleHierarchy[r]),
-    );
+    const userLevel = roleHierarchy[userRole] ?? 0;
+    const requiredLevels = requiredRoles
+      .map((role) => roleHierarchy[role])
+      .filter((level) => typeof level === "number");
+    if (requiredLevels.length === 0) return false;
 
-    return userLevel >= minRequiredLevel;
+    return userLevel >= Math.min(...requiredLevels);
   }
 
   private validateCredentials(dto: AuthCredentialsDto) {

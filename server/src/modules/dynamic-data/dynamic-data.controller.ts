@@ -70,7 +70,6 @@ export class DynamicDataController {
   }
 
   @Get(":projectId/:tableName/:id")
-  @ApiOperation({ summary: "데이터 삭제 (DELETE)" })
   @ApiOperation({ summary: "단일 데이터 조회 (SELECT BY ID)" })
   async findOne(
     @Param("projectId") projectId: string,
@@ -98,6 +97,7 @@ export class DynamicDataController {
   }
 
   @Delete(":projectId/:tableName/:id")
+  @ApiOperation({ summary: "데이터 삭제 (DELETE)" })
   async remove(
     @Param("projectId") projectId: string,
     @Param("tableName") tableName: string,

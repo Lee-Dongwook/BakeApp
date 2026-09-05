@@ -15,9 +15,14 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       connectionString,
       // 온프레미스 PostgreSQL은 보통 내부 네트워크로 연결합니다.
       // TLS가 필요한 환경에서만 DATABASE_SSL=true를 설정합니다.
+      // 인증서 검증은 기본으로 켜 둔다.
+      // 사설 CA를 쓰는 온프레미스에서만 DATABASE_SSL_REJECT_UNAUTHORIZED=false로 완화한다.
       ssl:
         process.env.DATABASE_SSL === "true"
-          ? { rejectUnauthorized: false }
+          ? {
+              rejectUnauthorized:
+                process.env.DATABASE_SSL_REJECT_UNAUTHORIZED !== "false",
+            }
           : undefined,
     });
   }

@@ -1,5 +1,11 @@
-import { Controller, Post, Body, Query } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiQuery } from "@nestjs/swagger";
+import { Body, Controller, Post, Query, UseGuards } from "@nestjs/common";
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiQuery,
+  ApiTags,
+} from "@nestjs/swagger";
+import { AuthGuard } from "../auth/auth.guard";
 import { GeneratorService, ComponentNode } from "./generator.service";
 
 class GenerateCodeDto {
@@ -8,6 +14,8 @@ class GenerateCodeDto {
 }
 
 @ApiTags("Code Generator (RN & React 코드 컴파일러)")
+@ApiBearerAuth()
+@UseGuards(AuthGuard)
 @Controller("api/generator")
 export class GeneratorController {
   constructor(private readonly generatorService: GeneratorService) {}
