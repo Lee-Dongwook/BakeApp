@@ -10,6 +10,7 @@ import { ProjectModule } from "./modules/project/project.module";
 import { SchemaModule } from "./modules/schema/schema.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
 import { QueryBuilderModule } from "./modules/query-builder/query-builder.module";
+import { AuditModule } from "./modules/audit/audit.module";
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { QueryBuilderModule } from "./modules/query-builder/query-builder.module
     ExportModule,
     FigmaModule,
     QueryBuilderModule,
+    AuditModule,
   ],
   controllers: [],
   providers: [],

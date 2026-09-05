@@ -8,6 +8,7 @@ BakeApp Studio의 인증·프로젝트·동적 데이터 스키마
 
 | Name                                                            | Columns | Comment                                 | Type       |
 | --------------------------------------------------------------- | ------- | --------------------------------------- | ---------- |
+| [public.audit_logs](public.audit_logs.md)                       | 9       | API 데이터 변경에 대한 감사 로그                    | BASE TABLE |
 | [public.project_documents](public.project_documents.md)         | 3       | 프로젝트 편집 상태를 보관하는 JSON 문서                | BASE TABLE |
 | [public.project_environments](public.project_environments.md)   | 7       |                                         | BASE TABLE |
 | [public.project_members](public.project_members.md)             | 4       | 프로젝트별 협업 권한                             | BASE TABLE |

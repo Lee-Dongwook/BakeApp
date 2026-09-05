@@ -32,3 +32,5 @@ comments:
     tableComment: 사용자 플랜별 프로젝트 및 내보내기 한도
   - table: user_terms_agreements
     tableComment: 사용자 약관 및 선택 동의 이력
+  - table: audit_logs
+    tableComment: API 데이터 변경에 대한 감사 로그
