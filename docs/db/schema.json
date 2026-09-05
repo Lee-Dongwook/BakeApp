@@ -1,0 +1,646 @@
+{
+  "name": "BakeApp PostgreSQL Schema",
+  "desc": "BakeApp Studio의 인증·프로젝트·동적 데이터 스키마",
+  "tables": [
+    {
+      "name": "public.project_documents",
+      "type": "BASE TABLE",
+      "comment": "프로젝트 편집 상태를 보관하는 JSON 문서",
+      "columns": [
+        {
+          "name": "document",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'{\"pages\": [], \"queries\": [], \"workflows\": []}'::jsonb"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_documents_pkey",
+          "def": "CREATE UNIQUE INDEX project_documents_pkey ON public.project_documents USING btree (project_id)",
+          "table": "public.project_documents",
+          "columns": ["project_id"]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_documents_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (project_id)",
+          "table": "public.project_documents",
+          "referenced_table": "",
+          "columns": ["project_id"]
+        },
+        {
+          "name": "project_documents_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_documents",
+          "referenced_table": "public.projects",
+          "columns": ["project_id"],
+          "referenced_columns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "public.project_members",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 협업 권한",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_members_pkey",
+          "def": "CREATE UNIQUE INDEX project_members_pkey ON public.project_members USING btree (project_id, user_id)",
+          "table": "public.project_members",
+          "columns": ["project_id", "user_id"]
+        },
+        {
+          "name": "project_members_user_project_idx",
+          "def": "CREATE INDEX project_members_user_project_idx ON public.project_members USING btree (user_id, project_id)",
+          "table": "public.project_members",
+          "columns": ["user_id", "project_id"]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_members_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (project_id, user_id)",
+          "table": "public.project_members",
+          "referenced_table": "",
+          "columns": ["project_id", "user_id"]
+        },
+        {
+          "name": "project_members_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_members",
+          "referenced_table": "public.projects",
+          "columns": ["project_id"],
+          "referenced_columns": ["id"]
+        },
+        {
+          "name": "project_members_role_check",
+          "type": "CHECK",
+          "def": "CHECK ((role = ANY (ARRAY['owner'::text, 'editor'::text, 'viewer'::text])))",
+          "table": "public.project_members",
+          "referenced_table": "",
+          "columns": ["role"]
+        },
+        {
+          "name": "project_members_user_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "table": "public.project_members",
+          "referenced_table": "public.users",
+          "columns": ["user_id"],
+          "referenced_columns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "public.projects",
+      "type": "BASE TABLE",
+      "comment": "사용자가 소유하는 앱 빌더 프로젝트",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "owner_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "projects_owner_updated_at_idx",
+          "def": "CREATE INDEX projects_owner_updated_at_idx ON public.projects USING btree (owner_id, updated_at DESC)",
+          "table": "public.projects",
+          "columns": ["owner_id", "updated_at"]
+        },
+        {
+          "name": "projects_pkey",
+          "def": "CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)",
+          "table": "public.projects",
+          "columns": ["id"]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "projects_name_check",
+          "type": "CHECK",
+          "def": "CHECK ((char_length(btrim((name)::text)) \u003e 0))",
+          "table": "public.projects",
+          "referenced_table": "",
+          "columns": ["name"]
+        },
+        {
+          "name": "projects_owner_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE",
+          "table": "public.projects",
+          "referenced_table": "public.users",
+          "columns": ["owner_id"],
+          "referenced_columns": ["id"]
+        },
+        {
+          "name": "projects_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.projects",
+          "referenced_table": "",
+          "columns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "public.refresh_tokens",
+      "type": "BASE TABLE",
+      "comment": "해시된 갱신 토큰",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "expires_at",
+          "type": "timestamp with time zone",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "revoked_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "token_hash",
+          "type": "character(64)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "refresh_tokens_pkey",
+          "def": "CREATE UNIQUE INDEX refresh_tokens_pkey ON public.refresh_tokens USING btree (id)",
+          "table": "public.refresh_tokens",
+          "columns": ["id"]
+        },
+        {
+          "name": "refresh_tokens_token_hash_key",
+          "def": "CREATE UNIQUE INDEX refresh_tokens_token_hash_key ON public.refresh_tokens USING btree (token_hash)",
+          "table": "public.refresh_tokens",
+          "columns": ["token_hash"]
+        },
+        {
+          "name": "refresh_tokens_user_id_idx",
+          "def": "CREATE INDEX refresh_tokens_user_id_idx ON public.refresh_tokens USING btree (user_id)",
+          "table": "public.refresh_tokens",
+          "columns": ["user_id"]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "refresh_tokens_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.refresh_tokens",
+          "referenced_table": "",
+          "columns": ["id"]
+        },
+        {
+          "name": "refresh_tokens_token_hash_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (token_hash)",
+          "table": "public.refresh_tokens",
+          "referenced_table": "",
+          "columns": ["token_hash"]
+        },
+        {
+          "name": "refresh_tokens_user_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "table": "public.refresh_tokens",
+          "referenced_table": "public.users",
+          "columns": ["user_id"],
+          "referenced_columns": ["id"]
+        }
+      ]
+    },
+    {
+      "name": "public.users",
+      "type": "BASE TABLE",
+      "comment": "BakeApp 자체 인증 사용자",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "email",
+          "type": "varchar(320)",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "password_hash",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "text",
+          "nullable": false,
+          "default": "'USER'::text"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "users_email_key",
+          "def": "CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)",
+          "table": "public.users",
+          "columns": ["email"]
+        },
+        {
+          "name": "users_pkey",
+          "def": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)",
+          "table": "public.users",
+          "columns": ["id"]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "users_email_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (email)",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": ["email"]
+        },
+        {
+          "name": "users_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.users",
+          "referenced_table": "",
+          "columns": ["id"]
+        }
+      ]
+    }
+  ],
+  "relations": [
+    {
+      "table": "public.project_documents",
+      "columns": ["project_id"],
+      "cardinality": "zero_or_one",
+      "parent_table": "public.projects",
+      "parent_columns": ["id"],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_members",
+      "columns": ["user_id"],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": ["id"],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_members",
+      "columns": ["project_id"],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": ["id"],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.projects",
+      "columns": ["owner_id"],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": ["id"],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.refresh_tokens",
+      "columns": ["user_id"],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": ["id"],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    }
+  ],
+  "functions": [
+    {
+      "name": "public.armor",
+      "return_type": "text",
+      "arguments": "bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.armor",
+      "return_type": "text",
+      "arguments": "bytea, text[], text[]",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.crypt",
+      "return_type": "text",
+      "arguments": "text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.dearmor",
+      "return_type": "bytea",
+      "arguments": "text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.decrypt",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.decrypt_iv",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.digest",
+      "return_type": "bytea",
+      "arguments": "bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.digest",
+      "return_type": "bytea",
+      "arguments": "text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.encrypt",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.encrypt_iv",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.gen_random_bytes",
+      "return_type": "bytea",
+      "arguments": "integer",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.gen_random_uuid",
+      "return_type": "uuid",
+      "arguments": "",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.gen_salt",
+      "return_type": "text",
+      "arguments": "text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.gen_salt",
+      "return_type": "text",
+      "arguments": "text, integer",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.hmac",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.hmac",
+      "return_type": "bytea",
+      "arguments": "text, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_armor_headers",
+      "return_type": "record",
+      "arguments": "text, OUT key text, OUT value text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_key_id",
+      "return_type": "text",
+      "arguments": "bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt",
+      "return_type": "text",
+      "arguments": "bytea, bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt",
+      "return_type": "text",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt",
+      "return_type": "text",
+      "arguments": "bytea, bytea, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_decrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_encrypt",
+      "return_type": "bytea",
+      "arguments": "text, bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_encrypt",
+      "return_type": "bytea",
+      "arguments": "text, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_encrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_pub_encrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_decrypt",
+      "return_type": "text",
+      "arguments": "bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_decrypt",
+      "return_type": "text",
+      "arguments": "bytea, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_decrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_decrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_encrypt",
+      "return_type": "bytea",
+      "arguments": "text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_encrypt",
+      "return_type": "bytea",
+      "arguments": "text, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_encrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.pgp_sym_encrypt_bytea",
+      "return_type": "bytea",
+      "arguments": "bytea, text, text",
+      "type": "FUNCTION"
+    }
+  ],
+  "driver": {
+    "name": "postgres",
+    "database_version": "PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
+    "meta": {
+      "current_schema": "public",
+      "search_paths": ["bakeapp", "public"],
+      "dict": {
+        "Functions": "Stored procedures and functions"
+      }
+    }
+  }
+}

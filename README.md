@@ -104,7 +104,20 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql`
 6. `server/migrations/20260903_create_refresh_tokens.sql`
 
-### 4. 개발 서버 실행
+### 4. ERD 문서 생성 (tbls)
+
+Docker 네트워크 안에서 `tbls`를 실행하므로, 로컬 컴퓨터의 PostgreSQL 포트와 충돌하지 않습니다.
+
+```bash
+docker compose up -d db
+pnpm db:doc
+```
+
+- 접속 정보는 Docker Compose의 `POSTGRES_*` 환경 변수로만 전달하며, `.tbls.yml`에는 저장하지 않습니다.
+- 생성 결과는 `docs/db/README.md`와 `docs/db/schema.svg`입니다.
+- 별도의 로컬 `tbls` 설치는 필요하지 않습니다. 처음 실행할 때 Docker가 이미지를 내려받습니다.
+
+### 5. 개발 서버 실행
 
 ```bash
 pnpm dev

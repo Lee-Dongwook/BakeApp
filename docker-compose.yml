@@ -14,6 +14,19 @@ services:
       timeout: 5s
       retries: 10
 
+  tbls:
+    image: k1low/tbls:v1.94.5
+    profiles: ["tools"]
+    working_dir: /work
+    entrypoint: ["tbls"]
+    environment:
+      TBLS_DSN: postgresql://${POSTGRES_USER:-bakeapp}:${POSTGRES_PASSWORD:-bakeapp}@db:5432/${POSTGRES_DB:-bakeapp}?sslmode=disable
+    volumes:
+      - ./:/work
+    depends_on:
+      db:
+        condition: service_healthy
+
   api:
     build:
       context: ./server

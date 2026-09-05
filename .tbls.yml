@@ -1,0 +1,26 @@
+name: BakeApp PostgreSQL Schema
+desc: BakeApp Studio의 인증·프로젝트·동적 데이터 스키마
+
+# 실제 접속 정보는 저장소에 넣지 않습니다.
+# `pnpm db:doc`가 server/.env의 DATABASE_URL을 TBLS_DSN으로 전달합니다.
+docPath: docs/db
+
+format:
+  adjust: true
+  sort: true
+
+er:
+  format: svg
+  distance: 2
+
+comments:
+  - table: users
+    tableComment: BakeApp 자체 인증 사용자
+  - table: projects
+    tableComment: 사용자가 소유하는 앱 빌더 프로젝트
+  - table: project_documents
+    tableComment: 프로젝트 편집 상태를 보관하는 JSON 문서
+  - table: project_members
+    tableComment: 프로젝트별 협업 권한
+  - table: refresh_tokens
+    tableComment: 해시된 갱신 토큰
