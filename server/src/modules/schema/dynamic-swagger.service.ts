@@ -1,9 +1,5 @@
 import { INestApplication, Injectable } from "@nestjs/common";
-import {
-  OpenAPIObject,
-  ParameterObject,
-  SwaggerModule,
-} from "@nestjs/swagger";
+import { OpenAPIObject, ParameterObject, SwaggerModule } from "@nestjs/swagger";
 import { ColumnMeta } from "./interfaces/schema-registry.interface";
 import { SchemaRegistryService } from "./schema-registry.service";
 
@@ -26,7 +22,6 @@ export class DynamicSwaggerService {
     await this.refreshSwaggerDoc();
 
     SwaggerModule.setup("api-docs", app, () => this.document!, {
-      // Swagger UI가 최초 요청의 문서를 캐시하지 않고 최신 문서를 사용하게 한다.
       patchDocumentOnRequest: (_request, _response, document) => document,
     });
   }
@@ -193,6 +188,11 @@ export class DynamicSwaggerService {
       case "datetime":
         schema.type = "string";
         schema.format = "date-time";
+        break;
+      case "relation":
+        schema.type = "string";
+        schema.format = "uuid";
+        schema.description = `${column.description ?? column.name} (Relation: ${column.relation?.targetTable}.${column.relation?.targetColumn || "id"})`;
         break;
       default:
         schema.type = "string";

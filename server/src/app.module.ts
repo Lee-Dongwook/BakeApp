@@ -9,6 +9,7 @@ import { GeneratorModule } from "./modules/generator/generator.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { SchemaModule } from "./modules/schema/schema.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
+import { QueryBuilderModule } from "./modules/query-builder/query-builder.module";
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { WorkflowModule } from "./modules/workflow/workflow.module";
     ProjectModule,
     ExportModule,
     FigmaModule,
+    QueryBuilderModule,
   ],
   controllers: [],
   providers: [],

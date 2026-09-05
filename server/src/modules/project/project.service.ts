@@ -37,10 +37,7 @@ export class ProjectService {
         `INSERT INTO project_documents (project_id, document)
          VALUES ($1, $2)
          ON CONFLICT (project_id) DO NOTHING`,
-        [
-          project.id,
-          JSON.stringify({ pages: [], queries: [], workflows: [] }),
-        ],
+        [project.id, JSON.stringify({ pages: [], queries: [], workflows: [] })],
       );
 
       return project;
@@ -133,6 +130,23 @@ export class ProjectService {
 
     if (!result.rows[0]?.canEdit) {
       throw new ForbiddenException("프로젝트를 수정할 권한이 없습니다.");
+    }
+  }
+
+  async ensureCanView(id: string, userId: string): Promise<void> {
+    const result = await this.databaseService.query<{ canView: boolean }>(
+      `SELECT EXISTS (
+         SELECT 1
+         FROM projects p
+         LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = $2
+         WHERE p.id = $1
+           AND (p.owner_id = $2 OR pm.user_id = $2)
+       ) AS "canView"`,
+      [id, userId],
+    );
+
+    if (!result.rows[0]?.canView) {
+      throw new ForbiddenException("프로젝트를 조회할 권한이 없습니다.");
     }
   }
 

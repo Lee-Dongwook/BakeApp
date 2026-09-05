@@ -1,18 +1,12 @@
 import { Injectable, Logger } from "@nestjs/common";
-import {
-  ColumnMeta,
-  TableMeta,
-} from "./interfaces/schema-registry.interface";
+import { ColumnMeta, TableMeta } from "./interfaces/schema-registry.interface";
 
 @Injectable()
 export class SchemaRegistryService {
   private readonly logger = new Logger(SchemaRegistryService.name);
   private registry = new Map<string, TableMeta>();
 
-  saveSchema(
-    projectId: string,
-    tableMeta: Omit<TableMeta, "projectId">,
-  ): void {
+  saveSchema(projectId: string, tableMeta: Omit<TableMeta, "projectId">): void {
     const key = `${projectId}:${tableMeta.tableName}`;
     const previous = this.registry.get(key);
     const payload: TableMeta = {
