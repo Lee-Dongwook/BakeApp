@@ -17,10 +17,12 @@ export class QueryBuilderService {
       .join(".");
   }
 
-  async executeQuery(projectId: string, dto: ExecuteQueryDto) {
+  async executeQuery(
+    projectId: string,
+    dto: ExecuteQueryDto & { search?: { column: string; keyword: string } },
+  ) {
     const mainTable = buildTenantTableName(projectId, dto.fromTable);
     const queryParams: any[] = [];
-
     let paramIndex = 1;
 
     let selectClause = "*";
@@ -30,7 +32,9 @@ export class QueryBuilderService {
         .join(", ");
     }
 
-    let sql = `SELECT ${selectClause} FROM "${mainTable}" AS "${sanitizeIdentifier(dto.fromTable)}"`;
+    let baseSql = `FROM "${mainTable}" AS "${sanitizeIdentifier(dto.fromTable)}"`;
+
+    // JOIN 처리
     if (dto.joins && dto.joins.length > 0) {
       for (const join of dto.joins) {
         const joinTableRealName = buildTenantTableName(
@@ -47,13 +51,14 @@ export class QueryBuilderService {
           `${join.targetTable}.${join.targetKey || "id"}`,
         );
 
-        sql += ` ${joinType} JOIN "${joinTableRealName}" AS "${joinAlias}" ON ${foreignKey} = ${targetKey}`;
+        baseSql += ` ${joinType} JOIN "${joinTableRealName}" AS "${joinAlias}" ON ${foreignKey} = ${targetKey}`;
       }
     }
 
-    if (dto.where && dto.where.length > 0) {
-      const whereClauses: string[] = [];
+    // WHERE 및 검색 조건 누적
+    const whereClauses: string[] = [];
 
+    if (dto.where && dto.where.length > 0) {
       for (const cond of dto.where) {
         const fieldName = this.secureQuoteIdentifier(cond.field);
         const clause = this.buildWhereClause(
@@ -71,30 +76,55 @@ export class QueryBuilderService {
           }
         }
       }
-
-      if (whereClauses.length > 0) {
-        sql += ` WHERE ${whereClauses.join(" AND ")}`;
-      }
     }
 
+    // 추가 검색(Search) 기능 결합
+    if (dto.search?.column && dto.search.keyword) {
+      const searchField = this.secureQuoteIdentifier(dto.search.column);
+      whereClauses.push(`${searchField} ILIKE $${paramIndex}`);
+      queryParams.push(`%${dto.search.keyword}%`);
+      paramIndex++;
+    }
+
+    const whereSql =
+      whereClauses.length > 0 ? ` WHERE ${whereClauses.join(" AND ")}` : "";
+
+    // 1. 전체 카운트 쿼리 (페이지네이션 계산용)
+    const countQuery = `SELECT COUNT(*) ${baseSql} ${whereSql}`;
+    const countResult = await this.databaseService.query<{ count: string }>(
+      countQuery,
+      queryParams,
+    );
+    const total = Number.parseInt(countResult.rows[0]?.count || "0", 10);
+
+    // 2. 정렬 처리
+    let orderSql = "";
     if (dto.orderBy) {
       const orderField = this.secureQuoteIdentifier(dto.orderBy.field);
       const direction = dto.orderBy.direction === "DESC" ? "DESC" : "ASC";
-      sql += ` ORDER BY ${orderField} ${direction}`;
+      orderSql = ` ORDER BY ${orderField} ${direction}`;
     }
 
+    // 3. 페이지네이션 처리 (limit, offset)
     const limit = dto.limit || 50;
     const offset = dto.offset || 0;
-    sql += ` LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
-    queryParams.push(limit, offset);
+
+    // 데이터 조회 쿼리용 파라미터는 limit, offset용 인덱스가 추가되므로 별도 관리 필요
+    const dataParams = [...queryParams, limit, offset];
+    const dataQuery = `SELECT ${selectClause} ${baseSql} ${whereSql} ${orderSql} LIMIT $${paramIndex} OFFSET $${paramIndex + 1}`;
 
     try {
-      const result = await this.databaseService.query(sql, queryParams);
+      const result = await this.databaseService.query(dataQuery, dataParams);
+
       return {
         data: result.rows,
-        count: result.rowCount,
-        limit,
-        offset,
+        meta: {
+          total,
+          limit,
+          offset,
+          page: Math.floor(offset / limit) + 1,
+          totalPages: Math.ceil(total / limit),
+        },
       };
     } catch (error) {
       throw new BadRequestException(
