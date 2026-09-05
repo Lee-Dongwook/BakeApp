@@ -13,6 +13,7 @@ import { LayersPanel } from "./components/LayersPanel";
 import { PropertyInspector } from "./components/PropertyInspector";
 import { CodePreviewModal } from "./components/CodePreviewModal";
 import { DbSchemaBuilderModal } from "./components/DbSchemaBuilderModal";
+import { FigmaImportModal } from "./components/FigmaImportModal";
 import { Header } from "./components/Header";
 import { PageManagerPanel } from "./components/PageManagerPanel";
 import { ApiQueryManagerPanel } from "./components/ApiQueryManagerPanel";
@@ -44,6 +45,7 @@ export default function App() {
   const pages = usePageStore((state) => state.pages);
   const setActivePage = usePageStore((state) => state.setActivePage);
   const addNode = usePageStore((state) => state.addNode);
+  const addPage = usePageStore((state) => state.addPage);
   const deleteNode = usePageStore((state) => state.deleteNode);
   const duplicateNode = usePageStore((state) => state.duplicateNode);
   const reorderNode = usePageStore((state) => state.reorderNode);
@@ -53,6 +55,7 @@ export default function App() {
   const setSelectedNodeId = useCanvasStore((state) => state.setSelectedNodeId);
   const [isCodeModalOpen, setIsCodeModalOpen] = useState(false);
   const [isDbModalOpen, setIsDbModalOpen] = useState(false);
+  const [isFigmaImportOpen, setIsFigmaImportOpen] = useState(false);
   const [sidebarTab, setSidebarTab] = useState<SidebarTab>("COMPONENTS");
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isMobileInspectorOpen, setIsMobileInspectorOpen] = useState(false);
@@ -213,6 +216,15 @@ export default function App() {
     }
   };
 
+  const handleFigmaImported = (node: ComponentNode) => {
+    const timestamp = Date.now();
+    const pageName = node.name?.trim() || "Figma 디자인";
+    const pageId = addPage(pageName, `/figma-${timestamp}`);
+    addNode(pageId, `root-container-${pageId}`, node);
+    setActivePage(pageId);
+    setSelectedNodeId(node.id);
+  };
+
   if (isInitializing) {
     return (
       <div className="app-shell flex h-screen items-center justify-center text-secondary">
@@ -246,6 +258,7 @@ export default function App() {
       <div className="app-shell flex h-screen w-screen flex-col">
         <Header
           onOpenDbBuilder={() => setIsDbModalOpen(true)}
+          onOpenFigmaImport={() => setIsFigmaImportOpen(true)}
           onOpenCodePreview={() => setIsCodeModalOpen(true)}
           projectName={activeProject.name}
           onBackToProjects={closeProject}
@@ -357,6 +370,11 @@ export default function App() {
         isOpen={isDbModalOpen}
         onClose={() => setIsDbModalOpen(false)}
         projectId={activeProject.id}
+      />
+      <FigmaImportModal
+        isOpen={isFigmaImportOpen}
+        onClose={() => setIsFigmaImportOpen(false)}
+        onImported={handleFigmaImported}
       />
 
       <button

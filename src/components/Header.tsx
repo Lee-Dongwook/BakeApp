@@ -19,12 +19,14 @@ import {
   Undo2,
   Redo2,
   Download,
+  Palette,
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
 
 interface HeaderProps {
   onOpenDbBuilder: () => void;
+  onOpenFigmaImport: () => void;
   onOpenCodePreview: () => void;
   projectName: string;
   onBackToProjects: () => void;
@@ -37,6 +39,7 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onOpenDbBuilder,
+  onOpenFigmaImport,
   onOpenCodePreview,
   projectName,
   onBackToProjects,
@@ -256,6 +259,17 @@ export const Header: React.FC<HeaderProps> = ({
                 className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-inset)] hover:text-white"
               >
                 <Database className="h-3.5 w-3.5 text-amber-400" /> DB Builder (스키마)
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenFigmaImport();
+                  setIsMoreMenuOpen(false);
+                }}
+                className="flex w-full items-center gap-2 rounded-md px-2.5 py-2 text-left text-xs text-[var(--text-secondary)] hover:bg-[var(--surface-inset)] hover:text-white"
+              >
+                <Palette className="h-3.5 w-3.5 text-pink-400" /> Figma 디자인 가져오기
               </button>
 
               <button

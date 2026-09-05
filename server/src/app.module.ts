@@ -8,6 +8,7 @@ import { SchemaModule } from "./modules/schema/schema.module";
 import { DatabaseModule } from "./modules/database/database.module";
 import { ProjectModule } from "./modules/project/project.module";
 import { ExportModule } from "./modules/export/export.module";
+import { FigmaModule } from "./modules/figma/figma.module";
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ExportModule } from "./modules/export/export.module";
     AuthModule,
     ProjectModule,
     ExportModule,
+    FigmaModule,
   ],
   controllers: [],
 })

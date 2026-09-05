@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 export interface ComponentNode {
   type: string;
   id?: string;
+  name?: string;
   props?: Record<string, unknown>;
   style?: Record<string, unknown>;
   children?: (ComponentNode | string)[];
