@@ -118,35 +118,38 @@
 <!-- public.project_datasources -->
 <g id="node4" class="node">
 <title>public.project_datasources</title>
-<polygon fill="#efefef" stroke="none" points="1704.23,-959.8 1704.23,-995.4 2035.15,-995.4 2035.15,-959.8 1704.23,-959.8"/>
-<polygon fill="none" stroke="black" points="1704.23,-959.8 1704.23,-995.4 2035.15,-995.4 2035.15,-959.8 1704.23,-959.8"/>
-<text text-anchor="start" x="1711.23" y="-973.2" font-family="Arial Bold" font-size="18.00">public.project_datasources</text>
-<text text-anchor="start" x="1903.66" y="-973.2" font-family="Arial" font-size="14.00">    </text>
-<text text-anchor="start" x="1934.78" y="-973.2" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
-<polygon fill="none" stroke="black" points="1704.23,-929 1704.23,-959.8 2035.15,-959.8 2035.15,-929 1704.23,-929"/>
-<text text-anchor="start" x="1711.23" y="-941.2" font-family="Arial" font-size="14.00">config </text>
-<text text-anchor="start" x="1752.48" y="-941.2" font-family="Arial" font-size="14.00" fill="#666666">[jsonb]</text>
-<polygon fill="none" stroke="black" points="1704.23,-898.2 1704.23,-929 2035.15,-929 2035.15,-898.2 1704.23,-898.2"/>
-<text text-anchor="start" x="1711.23" y="-910.4" font-family="Arial" font-size="14.00">created_at </text>
-<text text-anchor="start" x="1781.28" y="-910.4" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
-<polygon fill="none" stroke="black" points="1704.23,-867.4 1704.23,-898.2 2035.15,-898.2 2035.15,-867.4 1704.23,-867.4"/>
-<text text-anchor="start" x="1711.23" y="-879.6" font-family="Arial" font-size="14.00">id </text>
-<text text-anchor="start" x="1726.02" y="-879.6" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
-<polygon fill="none" stroke="black" points="1704.23,-836.6 1704.23,-867.4 2035.15,-867.4 2035.15,-836.6 1704.23,-836.6"/>
-<text text-anchor="start" x="1711.23" y="-848.8" font-family="Arial" font-size="14.00">project_id </text>
-<text text-anchor="start" x="1775.82" y="-848.8" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
-<polygon fill="none" stroke="black" points="1704.23,-805.8 1704.23,-836.6 2035.15,-836.6 2035.15,-805.8 1704.23,-805.8"/>
-<text text-anchor="start" x="1711.23" y="-818" font-family="Arial" font-size="14.00">type </text>
-<text text-anchor="start" x="1741.58" y="-818" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
-<polygon fill="none" stroke="black" points="1704.23,-775 1704.23,-805.8 2035.15,-805.8 2035.15,-775 1704.23,-775"/>
-<text text-anchor="start" x="1711.23" y="-787.2" font-family="Arial" font-size="14.00">updated_at </text>
-<text text-anchor="start" x="1785.19" y="-787.2" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+<polygon fill="#efefef" stroke="none" points="1704.23,-975.2 1704.23,-1010.8 2035.15,-1010.8 2035.15,-975.2 1704.23,-975.2"/>
+<polygon fill="none" stroke="black" points="1704.23,-975.2 1704.23,-1010.8 2035.15,-1010.8 2035.15,-975.2 1704.23,-975.2"/>
+<text text-anchor="start" x="1711.23" y="-988.6" font-family="Arial Bold" font-size="18.00">public.project_datasources</text>
+<text text-anchor="start" x="1903.66" y="-988.6" font-family="Arial" font-size="14.00">    </text>
+<text text-anchor="start" x="1934.78" y="-988.6" font-family="Arial" font-size="14.00" fill="#666666">[BASE TABLE]</text>
+<polygon fill="none" stroke="black" points="1704.23,-944.4 1704.23,-975.2 2035.15,-975.2 2035.15,-944.4 1704.23,-944.4"/>
+<text text-anchor="start" x="1711.23" y="-956.6" font-family="Arial" font-size="14.00">config </text>
+<text text-anchor="start" x="1752.48" y="-956.6" font-family="Arial" font-size="14.00" fill="#666666">[jsonb]</text>
+<polygon fill="none" stroke="black" points="1704.23,-913.6 1704.23,-944.4 2035.15,-944.4 2035.15,-913.6 1704.23,-913.6"/>
+<text text-anchor="start" x="1711.23" y="-925.8" font-family="Arial" font-size="14.00">created_at </text>
+<text text-anchor="start" x="1781.28" y="-925.8" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
+<polygon fill="none" stroke="black" points="1704.23,-882.8 1704.23,-913.6 2035.15,-913.6 2035.15,-882.8 1704.23,-882.8"/>
+<text text-anchor="start" x="1711.23" y="-895" font-family="Arial" font-size="14.00">id </text>
+<text text-anchor="start" x="1726.02" y="-895" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
+<polygon fill="none" stroke="black" points="1704.23,-852 1704.23,-882.8 2035.15,-882.8 2035.15,-852 1704.23,-852"/>
+<text text-anchor="start" x="1711.23" y="-864.2" font-family="Arial" font-size="14.00">name </text>
+<text text-anchor="start" x="1750.14" y="-864.2" font-family="Arial" font-size="14.00" fill="#666666">[varchar(100)]</text>
+<polygon fill="none" stroke="black" points="1704.23,-821.2 1704.23,-852 2035.15,-852 2035.15,-821.2 1704.23,-821.2"/>
+<text text-anchor="start" x="1711.23" y="-833.4" font-family="Arial" font-size="14.00">project_id </text>
+<text text-anchor="start" x="1775.82" y="-833.4" font-family="Arial" font-size="14.00" fill="#666666">[uuid]</text>
+<polygon fill="none" stroke="black" points="1704.23,-790.4 1704.23,-821.2 2035.15,-821.2 2035.15,-790.4 1704.23,-790.4"/>
+<text text-anchor="start" x="1711.23" y="-802.6" font-family="Arial" font-size="14.00">type </text>
+<text text-anchor="start" x="1741.58" y="-802.6" font-family="Arial" font-size="14.00" fill="#666666">[text]</text>
+<polygon fill="none" stroke="black" points="1704.23,-759.6 1704.23,-790.4 2035.15,-790.4 2035.15,-759.6 1704.23,-759.6"/>
+<text text-anchor="start" x="1711.23" y="-771.8" font-family="Arial" font-size="14.00">updated_at </text>
+<text text-anchor="start" x="1785.19" y="-771.8" font-family="Arial" font-size="14.00" fill="#666666">[timestamp with time zone]</text>
 </g>
 <!-- public.project_datasources&#45;&gt;public.projects -->
 <g id="edge3" class="edge">
 <title>public.project_datasources:project_id&#45;&gt;public.projects:id</title>
-<path fill="none" stroke="black" d="M1693.13,-850.93C1653.6,-841.68 1678.71,-774.41 1704.23,-731.8 1749.32,-656.52 1832.45,-712.49 1877.53,-637.2 1906.75,-588.39 1935.42,-509.2 1878.53,-509.2"/>
-<polygon fill="black" stroke="black" points="1692.95,-850.91 1702.42,-856.44 1698.26,-851.47 1702.57,-851.93 1702.57,-851.93 1702.57,-851.93 1698.26,-851.47 1703.37,-847.49 1692.95,-850.91"/>
+<path fill="none" stroke="black" d="M1693.1,-835.52C1653.39,-826.15 1677.21,-758.07 1704.23,-716.4 1750.3,-645.34 1831.48,-708.27 1877.53,-637.2 1908.47,-589.46 1935.42,-509.2 1878.53,-509.2"/>
+<polygon fill="black" stroke="black" points="1692.95,-835.5 1702.42,-841.04 1698.26,-836.07 1702.57,-836.53 1702.57,-836.53 1702.57,-836.53 1698.26,-836.07 1703.38,-832.09 1692.95,-835.5"/>
 </g>
 <!-- public.project_deployments -->
 <g id="node5" class="node">

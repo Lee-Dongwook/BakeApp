@@ -4,6 +4,7 @@
 CREATE TABLE IF NOT EXISTS public.project_datasources (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL CHECK (char_length(btrim(name)) > 0),
   type TEXT NOT NULL CHECK (type IN ('POSTGRESQL')),
   config JSONB NOT NULL CHECK (jsonb_typeof(config) = 'object'),
   created_at TIMESTAMPTZ NOT NULL DEFAULT CURRENT_TIMESTAMP,

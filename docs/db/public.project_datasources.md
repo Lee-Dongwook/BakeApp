@@ -11,6 +11,7 @@
 | config     | jsonb                    |                   | false    |          |                                       |         |
 | created_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |          |                                       |         |
 | id         | uuid                     | gen_random_uuid() | false    |          |                                       |         |
+| name       | varchar(100)             |                   | false    |          |                                       |         |
 | project_id | uuid                     |                   | false    |          | [public.projects](public.projects.md) |         |
 | type       | text                     |                   | false    |          |                                       |         |
 | updated_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |          |                                       |         |
@@ -20,6 +21,7 @@
 | Name                                | Type        | Definition                                                         |
 | ----------------------------------- | ----------- | ------------------------------------------------------------------ |
 | project_datasources_config_check    | CHECK       | CHECK ((jsonb_typeof(config) = 'object'::text))                    |
+| project_datasources_name_check      | CHECK       | CHECK ((char_length(btrim((name)::text)) > 0))                     |
 | project_datasources_pkey            | PRIMARY KEY | PRIMARY KEY (id)                                                   |
 | project_datasources_project_id_fkey | FOREIGN KEY | FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE |
 | project_datasources_type_check      | CHECK       | CHECK ((type = 'POSTGRESQL'::text))                                |

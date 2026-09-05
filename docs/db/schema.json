@@ -154,6 +154,11 @@
           "default": "gen_random_uuid()"
         },
         {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
           "name": "project_id",
           "type": "uuid",
           "nullable": false
@@ -198,6 +203,16 @@
           "referenced_table": "",
           "columns": [
             "config"
+          ]
+        },
+        {
+          "name": "project_datasources_name_check",
+          "type": "CHECK",
+          "def": "CHECK ((char_length(btrim((name)::text)) \u003e 0))",
+          "table": "public.project_datasources",
+          "referenced_table": "",
+          "columns": [
+            "name"
           ]
         },
         {

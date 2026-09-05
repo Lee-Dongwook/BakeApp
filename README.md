@@ -4,6 +4,8 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 ![BakeApp Studio 화면](img/demo.png)
 
+![BakeApp Studio 데이터베이스 ERD](docs/db/schema.svg)
+
 ---
 
 ## ✨ 주요 기능 및 구현 범위
@@ -63,22 +65,34 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 - **프로젝트 테이블 격리**: 프로젝트 ID 기반의 테이블 이름만 사용해 다른 프로젝트 데이터 접근을 차단
 - **조인·필터·정렬**: `LEFT`/`INNER` 조인, 비교·포함·NULL 조건, 정렬과 페이지네이션을 조합해 조회
+- **키워드 검색 필터**: `search.column`과 `search.keyword`로 지정한 컬럼을 대소문자 구분 없이(`ILIKE`) 부분 검색하며, 기존 `where` 조건과 `AND`로 결합
+- **조회 메타데이터**: 데이터와 함께 전체 건수, 현재 페이지, 전체 페이지 수를 반환해 목록 UI의 페이지네이션에 활용
 - **안전한 SQL 생성**: 테이블·컬럼 식별자는 검증하고 값은 파라미터 바인딩으로 전달
 
-### 6. 코드 생성 및 프로젝트 전체 Zip 내보내기
+### 6. 외부 PostgreSQL 데이터소스
+
+- **프로젝트별 연결 관리**: 연결 이름, 타입, 접속 설정을 프로젝트 단위로 등록·목록 조회·삭제
+- **PostgreSQL 지원**: 현재 `POSTGRESQL` 타입을 지원하며, `host`, `port`, `database`, `user`, 선택적 `password`, `ssl` 설정을 사용
+- **외부 쿼리 실행**: 등록된 데이터소스를 대상으로 SQL과 파라미터를 전달해 결과 행과 건수를 반환
+- **권한 분리**: 목록 조회는 프로젝트 조회 권한이 필요하고, 연결 등록·삭제·쿼리 실행은 편집 권한이 필요
+- **연결 재사용**: 데이터소스 ID별 PostgreSQL 연결 풀을 서버 메모리에 캐시
+
+외부 데이터소스의 계정은 필요한 테이블에만 최소 권한을 부여하세요. 현재 접속 설정은 `config` JSONB에 저장되므로, 운영 환경에서는 비밀번호 암호화 저장과 읽기 전용 DB 계정 사용이 필요합니다.
+
+### 7. 코드 생성 및 프로젝트 전체 Zip 내보내기
 
 - **React 19 + Tailwind CSS TSX 코드 생성**: 최신 React 컴포넌트 구조로 클린 코드 출력
 - **React Native 코드 생성**: 네이티브 컴포넌트(`View`, `Text`, `TextInput`, `Pressable`, `Image`, `Switch`) 호환 소스 출력
 - **원클릭 전체 프로젝트 Zip 내보내기 (`GET /api/export/:projectId/zip`)**:
   - `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/App.tsx`, `src/pages/*.tsx`를 포함한 완전한 독립 실행형 Vite 프로젝트 아카이브 즉시 다운로드
 
-### 7. Figma 디자인 가져오기
+### 8. Figma 디자인 가져오기
 
 - **Figma 링크·fileKey 지원**: 파일 또는 Frame 링크에서 `fileKey`, 선택적 `nodeId`를 추출
 - **캔버스 변환**: Figma의 텍스트·프레임·그룹·컴포넌트·사각형을 BakeApp 캔버스 노드로 변환
 - **편집기 연동**: 가져온 결과를 새 페이지로 추가해 기존 노코드 편집 흐름에서 바로 수정
 
-### 8. 감사 로그 (Audit Log)
+### 9. 감사 로그 (Audit Log)
 
 - **변경 이력 저장 기반**: `AuditService`와 `AuditInterceptor`는 쓰기 요청의 액션(`CREATE`, `UPDATE`, `DELETE`), 대상 테이블·레코드, 변경 데이터(JSON), 요청 IP를 `audit_logs`에 기록하도록 구성
 - **추적 정보**: 요청한 사용자와 프로젝트를 함께 보관하여 프로젝트·사용자별 변경 이력을 조회할 수 있도록 인덱스 구성
@@ -117,14 +131,14 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 감사 로그 기록 실패는 원래 API 처리 결과를 막지 않고 서버 콘솔에 오류만 남기도록 설계되어 있습니다.
 
-### 9. 프로젝트 릴리즈 및 롤백
+### 10. 프로젝트 릴리즈 및 롤백
 
 - **버전 스냅샷**: 프로젝트별로 증가하는 버전 번호, 이름·설명, 동적 스키마 JSON 스냅샷과 생성자를 `project_versions`에 저장
 - **프로덕션 배포 지정**: `project_deployments`에서 프로젝트별 활성 버전을 단일 행으로 관리
 - **안전한 배포 관계**: 복합 외래 키로 다른 프로젝트의 버전을 현재 프로젝트에 배포하지 못하도록 차단
 - **즉시 롤백**: 최근 버전 2개 중 직전 버전을 활성 배포 버전으로 다시 지정
 
-### 10. Runtime 인증 및 프로젝트 환경 변수
+### 11. Runtime 인증 및 프로젝트 환경 변수
 
 - **최종 사용자 인증**: 빌더 사용자와 분리된 프로젝트별 런타임 사용자 회원가입·로그인 및 7일 Runtime JWT 발급
 - **Runtime Guard**: Runtime JWT를 검증한 사용자 정보를 요청의 `runtimeUser`에 주입해 런타임 API에서 사용할 수 있도록 제공
@@ -185,13 +199,14 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 9. `server/migrations/20260905_pg_crypto.sql`
 10. `server/migrations/20260905_schema_and_policies.sql`
 11. `server/migrations/20260905_create_project_datasources.sql`
+12. `server/migrations/20260906_add_project_datasource_name.sql`
 
-이미 실행 중인 Docker PostgreSQL에 새 마이그레이션만 적용하려면 다음 명령을 사용합니다.
+이미 `project_datasources` 테이블을 적용한 Docker PostgreSQL에 연결 이름 컬럼을 추가하려면 다음 명령을 사용합니다.
 
 ```bash
 docker compose exec -T db psql -v ON_ERROR_STOP=1 \
   -U "${POSTGRES_USER:-bakeapp}" -d "${POSTGRES_DB:-bakeapp}" \
-  -f /docker-entrypoint-initdb.d/20260905_create_audit_logs.sql
+  -f /docker-entrypoint-initdb.d/20260906_add_project_datasource_name.sql
 ```
 
 `audit_logs`에는 `project_id`, `user_id`, `action`, `target_table`, `record_id`, `changes`, `ip_address`, `created_at`이 저장됩니다. `changes`는 요청 본문과 응답 요약을 JSON 형식으로 보관합니다.
@@ -239,32 +254,35 @@ pnpm dev
 
 ## 📡 주요 API 엔드포인트
 
-| 카테고리            | 메서드 / 경로                                               | 설명                                        |
-| ------------------- | ----------------------------------------------------------- | ------------------------------------------- |
-| **인증**            | `POST /api/auth/signup`                                     | 회원가입                                    |
-|                     | `POST /api/auth/signin`                                     | 로그인 & 토큰 발급                          |
-|                     | `POST /api/auth/refresh`                                    | 토큰 갱신                                   |
-|                     | `POST /api/auth/logout`                                     | 로그아웃                                    |
-| **프로젝트**        | `GET, POST /api/projects`                                   | 접근 가능한 프로젝트 목록 및 생성           |
-|                     | `GET, PATCH, DELETE /api/projects/:id`                      | 프로젝트 상세, 이름 변경, 삭제              |
-|                     | `GET, PUT /api/projects/:id/document`                       | 프로젝트 AST 문서 조회 및 저장              |
-|                     | `GET, POST /api/projects/:id/members`                       | 프로젝트 멤버 목록, 초대 및 역할 변경       |
-|                     | `DELETE /api/projects/:id/members/:userId`                  | 프로젝트 멤버 제거                          |
-| **동적 스키마**     | `POST /api/dynamic-schema/table`                            | 프로젝트 테이블 및 컬럼 생성                |
-|                     | `GET /api/dynamic-schema/tables/:projectId`                 | 프로젝트 테이블 목록 조회                   |
-|                     | `POST /api/dynamic-schema/column`                           | 기존 테이블에 컬럼 추가                     |
-| **동적 데이터**     | `GET, POST /api/dynamic-data/:projectId/:tableName`         | 동적 레코드 조회 및 추가                    |
-|                     | `PATCH, DELETE /api/dynamic-data/:projectId/:tableName/:id` | 레코드 수정 및 삭제                         |
-| **관계형 쿼리**     | `POST /api/projects/:projectId/query/execute`               | 조인·필터·정렬 기반 동적 조회               |
-| **워크플로우**      | `POST /api/workflow/execute`                                | 액션 체인 순차 실행                         |
-| **Runtime 인증**    | `POST /api/runtime/:projectId/auth/signup`                  | 프로젝트 최종 사용자 회원가입               |
-|                     | `POST /api/runtime/:projectId/auth/login`                   | Runtime JWT 발급                            |
-| **릴리즈**          | `POST /api/projects/:projectId/releases`                    | 현재 상태의 릴리즈 버전 생성                |
-|                     | `POST /api/projects/:projectId/releases/:versionId/deploy`  | 특정 버전을 활성 배포 버전으로 지정         |
-|                     | `POST /api/projects/:projectId/releases/rollback`           | 직전 릴리즈 버전으로 롤백                   |
-| **컴파일/내보내기** | `POST /api/generator/compile?target=react`                  | 단일 화면 코드 컴파일                       |
-|                     | `GET /api/export/:projectId/zip`                            | 프로젝트 전체 소스코드 zip 다운로드         |
-| **Figma 가져오기**  | `POST /api/figma/import`                                    | Figma 링크 또는 fileKey를 캔버스 AST로 변환 |
+| 카테고리            | 메서드 / 경로                                                   | 설명                                        |
+| ------------------- | --------------------------------------------------------------- | ------------------------------------------- |
+| **인증**            | `POST /api/auth/signup`                                         | 회원가입                                    |
+|                     | `POST /api/auth/signin`                                         | 로그인 & 토큰 발급                          |
+|                     | `POST /api/auth/refresh`                                        | 토큰 갱신                                   |
+|                     | `POST /api/auth/logout`                                         | 로그아웃                                    |
+| **프로젝트**        | `GET, POST /api/projects`                                       | 접근 가능한 프로젝트 목록 및 생성           |
+|                     | `GET, PATCH, DELETE /api/projects/:id`                          | 프로젝트 상세, 이름 변경, 삭제              |
+|                     | `GET, PUT /api/projects/:id/document`                           | 프로젝트 AST 문서 조회 및 저장              |
+|                     | `GET, POST /api/projects/:id/members`                           | 프로젝트 멤버 목록, 초대 및 역할 변경       |
+|                     | `DELETE /api/projects/:id/members/:userId`                      | 프로젝트 멤버 제거                          |
+| **동적 스키마**     | `POST /api/dynamic-schema/table`                                | 프로젝트 테이블 및 컬럼 생성                |
+|                     | `GET /api/dynamic-schema/tables/:projectId`                     | 프로젝트 테이블 목록 조회                   |
+|                     | `POST /api/dynamic-schema/column`                               | 기존 테이블에 컬럼 추가                     |
+| **동적 데이터**     | `GET, POST /api/dynamic-data/:projectId/:tableName`             | 동적 레코드 조회 및 추가                    |
+|                     | `PATCH, DELETE /api/dynamic-data/:projectId/:tableName/:id`     | 레코드 수정 및 삭제                         |
+| **관계형 쿼리**     | `POST /api/projects/:projectId/query/execute`                   | 조인·필터·정렬·키워드 검색 기반 동적 조회   |
+| **외부 데이터소스** | `GET, POST /api/projects/:projectId/datasources`                | 외부 PostgreSQL 연결 목록 조회 및 등록      |
+|                     | `POST /api/projects/:projectId/datasources/:datasourceId/query` | 등록한 외부 DB에 SQL 실행                   |
+|                     | `DELETE /api/projects/:projectId/datasources/:datasourceId`     | 외부 PostgreSQL 연결 삭제                   |
+| **워크플로우**      | `POST /api/workflow/execute`                                    | 액션 체인 순차 실행                         |
+| **Runtime 인증**    | `POST /api/runtime/:projectId/auth/signup`                      | 프로젝트 최종 사용자 회원가입               |
+|                     | `POST /api/runtime/:projectId/auth/login`                       | Runtime JWT 발급                            |
+| **릴리즈**          | `POST /api/projects/:projectId/releases`                        | 현재 상태의 릴리즈 버전 생성                |
+|                     | `POST /api/projects/:projectId/releases/:versionId/deploy`      | 특정 버전을 활성 배포 버전으로 지정         |
+|                     | `POST /api/projects/:projectId/releases/rollback`               | 직전 릴리즈 버전으로 롤백                   |
+| **컴파일/내보내기** | `POST /api/generator/compile?target=react`                      | 단일 화면 코드 컴파일                       |
+|                     | `GET /api/export/:projectId/zip`                                | 프로젝트 전체 소스코드 zip 다운로드         |
+| **Figma 가져오기**  | `POST /api/figma/import`                                        | Figma 링크 또는 fileKey를 캔버스 AST로 변환 |
 
 ---
 
