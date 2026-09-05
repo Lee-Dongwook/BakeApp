@@ -1,9 +1,9 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { SqlExecutor } from "../../common/tenant-table";
 import { DatabaseService } from "../database/database.service";
 import { DynamicDataService } from "../dynamic-data/dynamic-data.service";
-import { ActionNode, WorkflowPayload } from "./workflow.interface";
-import { SqlExecutor } from "../../common/tenant-table";
 import { ValueResolverService } from "./value-resolver.service";
+import { ActionNode, WorkflowPayload } from "./workflow.interface";
 
 @Injectable()
 export class WorkflowService {
@@ -135,7 +135,10 @@ export class WorkflowService {
               ? params.data
               : JSON.stringify(params.data);
         }
-        const response = await fetch(this.assertSafeUrl(params.url), fetchOptions);
+        const response = await fetch(
+          this.assertSafeUrl(params.url),
+          fetchOptions,
+        );
         const resText = await response.text();
         try {
           return JSON.parse(resText);
@@ -158,8 +161,7 @@ export class WorkflowService {
   }
 
   /**
-   * API_CALL이 내부망/메타데이터 서버로 향하지 않도록 막는다.
-   * WORKFLOW_ALLOWED_HOSTS(콤마 구분)를 설정하면 해당 호스트만 허용한다.
+   * SSRF 방어: API_CALL이 내부망/메타데이터 서버로 향하지 않도록 검증
    */
   private assertSafeUrl(rawUrl: string): string {
     let url: URL;
@@ -181,7 +183,9 @@ export class WorkflowService {
 
     if (allowList.length > 0) {
       if (!allowList.includes(hostname)) {
-        throw new Error(`허용되지 않은 API_CALL 대상 호스트입니다: ${hostname}`);
+        throw new Error(
+          `허용되지 않은 API_CALL 대상 호스트입니다: ${hostname}`,
+        );
       }
       return url.toString();
     }
@@ -204,8 +208,10 @@ export class WorkflowService {
       return true;
     }
 
-    // IPv6 유니크 로컬(fc00::/7) 및 링크 로컬(fe80::/10)
-    if (/^f[cd][0-9a-f]{2}:/.test(hostname) || /^fe[89ab][0-9a-f]:/.test(hostname)) {
+    if (
+      /^f[cd][0-9a-f]{2}:/.test(hostname) ||
+      /^fe[89ab][0-9a-f]:/.test(hostname)
+    ) {
       return true;
     }
 
@@ -217,7 +223,7 @@ export class WorkflowService {
       a === 0 ||
       a === 10 ||
       a === 127 ||
-      (a === 169 && b === 254) || // 클라우드 메타데이터
+      (a === 169 && b === 254) ||
       (a === 172 && b >= 16 && b <= 31) ||
       (a === 192 && b === 168) ||
       (a === 100 && b >= 64 && b <= 127)

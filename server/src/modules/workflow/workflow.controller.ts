@@ -98,6 +98,9 @@ export class WorkflowController {
         id: req.user.id,
         email: req.user.email,
       },
+      current_user: req.runtimeUser
+        ? { id: req.runtimeUser.sub, role: req.runtimeUser.role }
+        : null,
       env: envMap,
     };
 
