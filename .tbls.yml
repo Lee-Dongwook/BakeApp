@@ -34,3 +34,7 @@ comments:
     tableComment: 사용자 약관 및 선택 동의 이력
   - table: audit_logs
     tableComment: API 데이터 변경에 대한 감사 로그
+  - table: project_versions
+    tableComment: 프로젝트별 릴리즈 버전 스냅샷
+  - table: project_deployments
+    tableComment: 프로젝트별 현재 프로덕션 배포 버전

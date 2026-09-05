@@ -13,6 +13,7 @@ import { SchemaModule } from "./modules/schema/schema.module";
 import { WorkflowModule } from "./modules/workflow/workflow.module";
 import { QueryBuilderModule } from "./modules/query-builder/query-builder.module";
 import { AuditModule } from "./modules/audit/audit.module";
+import { ReleaseModule } from "./modules/release/release.module";
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AuditModule } from "./modules/audit/audit.module";
       rootPath: path.join(process.cwd(), "uploads"),
       serveRoot: "/uploads",
     }),
+    ReleaseModule,
   ],
   controllers: [],
   providers: [],

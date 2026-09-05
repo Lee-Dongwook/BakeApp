@@ -132,6 +132,79 @@
       ]
     },
     {
+      "name": "public.project_deployments",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 현재 프로덕션 배포 버전",
+      "columns": [
+        {
+          "name": "active_version_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_deployments_pkey",
+          "def": "CREATE UNIQUE INDEX project_deployments_pkey ON public.project_deployments USING btree (project_id)",
+          "table": "public.project_deployments",
+          "columns": [
+            "project_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_deployments_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (project_id)",
+          "table": "public.project_deployments",
+          "referenced_table": "",
+          "columns": [
+            "project_id"
+          ]
+        },
+        {
+          "name": "project_deployments_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_deployments",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_deployments_project_version_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id, active_version_id) REFERENCES project_versions(project_id, id)",
+          "table": "public.project_deployments",
+          "referenced_table": "public.project_versions",
+          "columns": [
+            "project_id",
+            "active_version_id"
+          ],
+          "referenced_columns": [
+            "project_id",
+            "id"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.project_documents",
       "type": "BASE TABLE",
       "comment": "프로젝트 편집 상태를 보관하는 JSON 문서",
@@ -492,6 +565,172 @@
           "columns": [
             "project_id",
             "table_name"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.project_versions",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 릴리즈 버전 스냅샷",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "snapshot",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "version_number",
+          "type": "integer",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_versions_pkey",
+          "def": "CREATE UNIQUE INDEX project_versions_pkey ON public.project_versions USING btree (id)",
+          "table": "public.project_versions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_project_created_at_idx",
+          "def": "CREATE INDEX project_versions_project_created_at_idx ON public.project_versions USING btree (project_id, created_at DESC)",
+          "table": "public.project_versions",
+          "columns": [
+            "project_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "project_versions_project_id_id_key",
+          "def": "CREATE UNIQUE INDEX project_versions_project_id_id_key ON public.project_versions USING btree (project_id, id)",
+          "table": "public.project_versions",
+          "columns": [
+            "project_id",
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_project_version_number_key",
+          "def": "CREATE UNIQUE INDEX project_versions_project_version_number_key ON public.project_versions USING btree (project_id, version_number)",
+          "table": "public.project_versions",
+          "columns": [
+            "project_id",
+            "version_number"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_versions_created_by_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL",
+          "table": "public.project_versions",
+          "referenced_table": "public.users",
+          "columns": [
+            "created_by"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_name_check",
+          "type": "CHECK",
+          "def": "CHECK ((char_length(btrim((name)::text)) \u003e 0))",
+          "table": "public.project_versions",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "project_versions_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.project_versions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_versions",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_project_id_id_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, id)",
+          "table": "public.project_versions",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "id"
+          ]
+        },
+        {
+          "name": "project_versions_project_version_number_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, version_number)",
+          "table": "public.project_versions",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "version_number"
+          ]
+        },
+        {
+          "name": "project_versions_version_number_check",
+          "type": "CHECK",
+          "def": "CHECK ((version_number \u003e 0))",
+          "table": "public.project_versions",
+          "referenced_table": "",
+          "columns": [
+            "version_number"
           ]
         }
       ]
@@ -1062,6 +1301,34 @@
       "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
     },
     {
+      "table": "public.project_deployments",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_one",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_deployments",
+      "columns": [
+        "project_id",
+        "active_version_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.project_versions",
+      "parent_columns": [
+        "project_id",
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id, active_version_id) REFERENCES project_versions(project_id, id)"
+    },
+    {
       "table": "public.project_documents",
       "columns": [
         "project_id"
@@ -1115,6 +1382,32 @@
     },
     {
       "table": "public.project_schemas",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_versions",
+      "columns": [
+        "created_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
+    },
+    {
+      "table": "public.project_versions",
       "columns": [
         "project_id"
       ],
