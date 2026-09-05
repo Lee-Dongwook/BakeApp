@@ -3,24 +3,30 @@ import { Injectable } from "@nestjs/common";
 @Injectable()
 export class ValueResolverService {
   private getValueByPath(obj: Record<string, any>, path: string): any {
-    return path
-      .split(".")
-      .reduce(
-        (acc, key) => (acc && acc[key] !== undefined ? acc[key] : undefined),
-        obj,
-      );
+    if (!obj || !path) return undefined;
+
+    const normalizedPath = path.replace(/\[(\d+)\]/g, ".$1");
+    const keys = normalizedPath.split(".");
+
+    return keys.reduce(
+      (acc, key) => (acc?.[key] !== undefined ? acc[key] : undefined),
+      obj,
+    );
   }
 
   private resolveString(str: string, context: Record<string, any>): any {
-    const exactMatch = str.match(/^\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}$/);
+    const exactMatch = str.match(/^\{\{\s*([a-zA-Z0-9_.[\]-]+)\s*\}\}$/);
     if (exactMatch) {
       const value = this.getValueByPath(context, exactMatch[1]);
       return value !== undefined ? value : str;
     }
 
-    return str.replace(/\{\{\s*([a-zA-Z0-9_.]+)\s*\}\}/g, (match, path) => {
+    return str.replace(/\{\{\s*([a-zA-Z0-9_.[\]-]+)\s*\}\}/g, (match, path) => {
       const value = this.getValueByPath(context, path);
-      return value !== undefined ? String(value) : match;
+      if (value === undefined || value === null) {
+        return "";
+      }
+      return typeof value === "object" ? JSON.stringify(value) : String(value);
     });
   }
 

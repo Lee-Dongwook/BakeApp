@@ -1,9 +1,15 @@
 import { Controller, Post, Body, UseGuards, Req } from "@nestjs/common";
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from "@nestjs/swagger";
-import { WorkflowService } from "./workflow.service";
-import { WorkflowPayload } from "./workflow.interface";
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from "@nestjs/swagger";
 import { AuthGuard } from "../auth/auth.guard";
 import { ProjectService } from "../project/project.service";
+import { WorkflowPayload } from "./workflow.interface";
+import { WorkflowService } from "./workflow.service";
 
 @ApiTags("Workflow Engine (액션 인터프리터)")
 @ApiBearerAuth()
@@ -21,11 +27,63 @@ export class WorkflowController {
     description:
       "프론트엔드에서 트리거된 연쇄 액션 노드 트리를 백엔드에서 인터프리팅하여 DB 연동 및 클라이언트 액션을 처리합니다.",
   })
+  @ApiBody({
+    description: "실행할 워크플로우 페이로드 및 트리거 정보",
+    schema: {
+      type: "object",
+      properties: {
+        projectId: { type: "string", example: "proj_12345" },
+        trigger: {
+          type: "string",
+          enum: ["ON_CLICK", "ON_PAGE_LOAD", "ON_SUBMIT"],
+          example: "ON_CLICK",
+        },
+        actions: {
+          type: "array",
+          items: {
+            type: "object",
+            properties: {
+              id: { type: "string", example: "node_1" },
+              type: {
+                type: "string",
+                enum: [
+                  "DB_INSERT",
+                  "DB_UPDATE",
+                  "DB_DELETE",
+                  "CONDITION",
+                  "API_CALL",
+                  "NAVIGATE",
+                  "SHOW_ALERT",
+                  "SHOW_TOAST",
+                ],
+                example: "DB_INSERT",
+              },
+              params: { type: "object" },
+              nextActionId: { type: "string", example: "node_2" },
+            },
+          },
+        },
+      },
+    },
+  })
   @ApiResponse({ status: 201, description: "워크플로우 성공적 실행" })
-  async execute(@Body() payload: WorkflowPayload, @Req() req: any) {
+  async execute(
+    @Body() payload: WorkflowPayload,
+    @Body("context") clientContext: Record<string, any> = {},
+    @Req() req: any,
+  ) {
     if (payload.projectId) {
       await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
     }
-    return this.workflowService.executeWorkflow(payload);
+
+    const context = {
+      ...clientContext,
+      user: {
+        id: req.user.id,
+        email: req.user.email,
+      },
+    };
+
+    return this.workflowService.executeWorkflow(payload, context);
   }
 }
