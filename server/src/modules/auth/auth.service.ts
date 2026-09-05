@@ -175,7 +175,9 @@ export class AuthService implements OnModuleInit {
     projectId: string,
   ): Promise<ProjectRole | null> {
     const result = await this.databaseService.query<{ role: ProjectRole }>(
-      `SELECT role FROM project_members WHERE user_id = $1 AND project_id = $2`,
+      `SELECT role FROM project_members WHERE user_id = $1 AND project_id = $2
+     UNION
+     SELECT 'OWNER' as role FROM projects WHERE id = $2 AND owner_id = $1`,
       [userId, projectId],
     );
 

@@ -122,6 +122,14 @@ export class DynamicSchemaService {
     try {
       await this.dbService.runInTransaction(async (client) => {
         await client.query(sql);
+
+        await client.query(
+          `INSERT INTO project_schemas (project_id, table_name, schema_definition)
+           VALUES ($1, $2, $3)
+           ON CONFLICT (project_id, table_name)
+           DO UPDATE SET schema_definition = $3, updated_at = NOW()`,
+          [projectId, cleanTableName, JSON.stringify({ columns })],
+        );
       });
 
       this.schemaRegistry.saveSchema(projectId, {
@@ -160,7 +168,28 @@ export class DynamicSchemaService {
     const sql = `ALTER TABLE "${fullTableName}" ADD COLUMN "${colName}" ${pgType} ${nullable};`;
 
     try {
-      await this.dbService.query(sql);
+      await this.dbService.runInTransaction(async (client) => {
+        await client.query(sql);
+
+        const schemaRes = await client.query<{
+          schema_definition: { columns: ColumnDefinition[] };
+        }>(
+          `SELECT schema_definition FROM project_schemas WHERE project_id = $1 AND table_name = $2`,
+          [projectId, cleanTableName],
+        );
+
+        const currentSchema = schemaRes.rows[0]?.schema_definition || {
+          columns: [],
+        };
+        currentSchema.columns.push(column);
+
+        await client.query(
+          `UPDATE project_schemas 
+           SET schema_definition = $1, updated_at = NOW()
+           WHERE project_id = $2 AND table_name = $3`,
+          [JSON.stringify(currentSchema), projectId, cleanTableName],
+        );
+      });
 
       this.schemaRegistry.addColumn(projectId, cleanTableName, column);
       await this.dynamicSwagger.refreshSwaggerDoc();
