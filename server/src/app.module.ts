@@ -1,4 +1,6 @@
 import { Module } from "@nestjs/common";
+import { ServeStaticModule } from "@nestjs/serve-static";
+import * as path from "path";
 import { AuthModule } from "./modules/auth/auth.module";
 import { DatabaseModule } from "./modules/database/database.module";
 import { DynamicDataModule } from "./modules/dynamic-data/dynamic-data.module";
@@ -26,6 +28,10 @@ import { AuditModule } from "./modules/audit/audit.module";
     FigmaModule,
     QueryBuilderModule,
     AuditModule,
+    ServeStaticModule.forRoot({
+      rootPath: path.join(process.cwd(), "uploads"),
+      serveRoot: "/uploads",
+    }),
   ],
   controllers: [],
   providers: [],
