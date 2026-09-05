@@ -40,3 +40,7 @@ comments:
     tableComment: 프로젝트별 현재 프로덕션 배포 버전
   - table: project_datasources
     tableComment: 프로젝트별 외부 데이터베이스 연결 설정
+  - table: workflows
+    tableComment: 프로젝트별 활성 워크플로우 노드 및 엣지 정의
+  - table: workflow_logs
+    tableComment: 워크플로우 실행 성공·실패 이력과 노드 실행 결과

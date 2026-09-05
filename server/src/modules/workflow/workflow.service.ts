@@ -17,6 +17,7 @@ export class WorkflowService {
     projectId: string,
     action: ActionNode,
     client?: SqlExecutor,
+    runtimeContext?: Record<string, any>,
   ) {
     const { type, params } = action;
 
@@ -109,6 +110,51 @@ export class WorkflowService {
         return { isTrue, left, operator, right };
       }
 
+      // 1. 반복(LOOP) 액션 처리 추가
+      case "LOOP": {
+        const { itemsPath, loopActions } = params;
+        // 런타임 컨텍스트에서 순회할 배열 데이터 추출 (예: steps.node_1.data 등)
+        const items =
+          this.resolvePath(runtimeContext, itemsPath) || params.items || [];
+
+        if (!Array.isArray(items)) {
+          throw new Error("LOOP 액션의 대상이 배열이 아닙니다.");
+        }
+
+        const loopResults = [];
+        for (const [index, item] of items.entries()) {
+          const itemContext = {
+            ...runtimeContext,
+            currentItem: item,
+            currentIndex: index,
+            steps: {},
+          };
+          const subResults: Record<string, any> = {};
+
+          if (loopActions && Array.isArray(loopActions)) {
+            for (const subAction of loopActions) {
+              const resolvedSubParams = this.valueResolver.resolve(
+                subAction.params,
+                itemContext,
+              );
+              const subRes = await this.executeSingleAction(
+                projectId,
+                { ...subAction, params: resolvedSubParams },
+                client,
+                itemContext,
+              );
+              subResults[subAction.id] = subRes;
+              itemContext.steps = {
+                ...itemContext.steps,
+                [subAction.id]: subRes,
+              };
+            }
+          }
+          loopResults.push({ index, item, results: subResults });
+        }
+        return { loopResults, totalCount: items.length };
+      }
+
       case "NAVIGATE": {
         return {
           clientAction: "NAVIGATE",
@@ -157,6 +203,42 @@ export class WorkflowService {
 
       default:
         throw new Error(`지원하지 않는 액션 타입입니다: ${type}`);
+    }
+  }
+
+  // 객체 경로 안전 조회 헬퍼 (예: "steps.node_1.data")
+  private resolvePath(obj: any, path: string) {
+    if (!path) return undefined;
+    return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+  }
+
+  private async executeWithRetry(
+    projectId: string,
+    action: ActionNode,
+    client?: SqlExecutor,
+    runtimeContext?: Record<string, any>,
+  ) {
+    const maxRetries = action.params?.maxRetries || 0;
+    const retryDelayMs = action.params?.retryDelayMs || 1000;
+    let attempt = 0;
+
+    while (true) {
+      try {
+        return await this.executeSingleAction(
+          projectId,
+          action,
+          client,
+          runtimeContext,
+        );
+      } catch (error) {
+        attempt++;
+        if (attempt > maxRetries) {
+          throw error;
+        }
+        await new Promise((resolve) =>
+          setTimeout(resolve, retryDelayMs * attempt),
+        );
+      }
     }
   }
 
@@ -278,10 +360,12 @@ export class WorkflowService {
             runtimeContext,
           );
 
-          const result = await this.executeSingleAction(
+          // 2. 재시도 정책(`maxRetries`)이 포함된 실행 래퍼 적용
+          const result = await this.executeWithRetry(
             projectId,
             { ...currentAction, params: resolvedParams },
             client,
+            runtimeContext,
           );
 
           executionResults[currentAction.id] = result;

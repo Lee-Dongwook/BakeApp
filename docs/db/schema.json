@@ -1390,6 +1390,252 @@
           ]
         }
       ]
+    },
+    {
+      "name": "public.workflow_logs",
+      "type": "BASE TABLE",
+      "comment": "워크플로우 실행 성공·실패 이력과 노드 실행 결과",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "execution_detail",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "workflow_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "workflow_logs_pkey",
+          "def": "CREATE UNIQUE INDEX workflow_logs_pkey ON public.workflow_logs USING btree (id)",
+          "table": "public.workflow_logs",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_logs_workflow_created_at_idx",
+          "def": "CREATE INDEX workflow_logs_workflow_created_at_idx ON public.workflow_logs USING btree (workflow_id, created_at DESC)",
+          "table": "public.workflow_logs",
+          "columns": [
+            "workflow_id",
+            "created_at"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "workflow_logs_execution_detail_check",
+          "type": "CHECK",
+          "def": "CHECK ((jsonb_typeof(execution_detail) = 'array'::text))",
+          "table": "public.workflow_logs",
+          "referenced_table": "",
+          "columns": [
+            "execution_detail"
+          ]
+        },
+        {
+          "name": "workflow_logs_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.workflow_logs",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_logs_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['SUCCESS'::text, 'FAILED'::text])))",
+          "table": "public.workflow_logs",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "workflow_logs_workflow_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE",
+          "table": "public.workflow_logs",
+          "referenced_table": "public.workflows",
+          "columns": [
+            "workflow_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.workflows",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 활성 워크플로우 노드 및 엣지 정의",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "edges",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'[]'::jsonb"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "is_active",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true"
+        },
+        {
+          "name": "name",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "nodes",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'[]'::jsonb"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "workflows_pkey",
+          "def": "CREATE UNIQUE INDEX workflows_pkey ON public.workflows USING btree (id)",
+          "table": "public.workflows",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflows_project_active_updated_at_idx",
+          "def": "CREATE INDEX workflows_project_active_updated_at_idx ON public.workflows USING btree (project_id, is_active, updated_at DESC)",
+          "table": "public.workflows",
+          "columns": [
+            "project_id",
+            "is_active",
+            "updated_at"
+          ]
+        },
+        {
+          "name": "workflows_project_name_key",
+          "def": "CREATE UNIQUE INDEX workflows_project_name_key ON public.workflows USING btree (project_id, name)",
+          "table": "public.workflows",
+          "columns": [
+            "project_id",
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "workflows_edges_check",
+          "type": "CHECK",
+          "def": "CHECK ((jsonb_typeof(edges) = 'array'::text))",
+          "table": "public.workflows",
+          "referenced_table": "",
+          "columns": [
+            "edges"
+          ]
+        },
+        {
+          "name": "workflows_name_check",
+          "type": "CHECK",
+          "def": "CHECK ((char_length(btrim((name)::text)) \u003e 0))",
+          "table": "public.workflows",
+          "referenced_table": "",
+          "columns": [
+            "name"
+          ]
+        },
+        {
+          "name": "workflows_nodes_check",
+          "type": "CHECK",
+          "def": "CHECK ((jsonb_typeof(nodes) = 'array'::text))",
+          "table": "public.workflows",
+          "referenced_table": "",
+          "columns": [
+            "nodes"
+          ]
+        },
+        {
+          "name": "workflows_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.workflows",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflows_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.workflows",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflows_project_name_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, name)",
+          "table": "public.workflows",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "name"
+          ]
+        }
+      ]
     }
   ],
   "relations": [
@@ -1615,6 +1861,32 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.workflow_logs",
+      "columns": [
+        "workflow_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.workflows",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.workflows",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     }
   ],
   "functions": [

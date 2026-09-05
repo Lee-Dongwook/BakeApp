@@ -51,15 +51,25 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
   - `DB_UPDATE`: 대상 테이블 레코드 수정
   - `DB_DELETE`: 대상 테이블 레코드 삭제
   - `CONDITION`: 비교 연산자와 분기 액션으로 조건부 실행
+  - `LOOP`: 런타임 컨텍스트의 배열 또는 직접 전달한 배열을 순회하며 하위 액션 실행
   - `API_CALL`: 외부 엔드포인트 REST API 호출
   - `RUN_QUERY`: 프로젝트에 저장된 API Query 실행
   - `NAVIGATE`: 페이지 전환 및 외부 링크 이동
   - `SHOW_TOAST` / `SHOW_ALERT`: 인앱 토스트 알림 표시
+  - `SET_FIELD` / `SET_PAGE_STATE` / `SET_APP_STATE`: 폼·페이지·앱 상태 변경
   - `OPEN_MODAL` / `CLOSE_MODAL`: 모달 열기·닫기
-  - `SET_PAGE_STATE` / `SET_APP_STATE`: 페이지·앱 상태 변경
   - `RESET_FORM` / `COPY_CLIPBOARD`: 폼 초기화 및 클립보드 복사
 - **동적 변수 바인딩**: `{{ form.name }}`, `{{ params.id }}`, `{{ steps.act_1.id }}` 자동 치환
+- **조건·반복·재시도 정책**: 비교 연산자 기반 분기, 항목별 하위 액션 반복, 노드별 `maxRetries`와 재시도 횟수에 비례한 대기 시간을 지원
+- **안전한 외부 호출**: `API_CALL`은 HTTP/HTTPS만 허용하며, 기본적으로 내부망 주소를 차단합니다. `WORKFLOW_ALLOWED_HOSTS`를 설정하면 해당 호스트만 호출할 수 있습니다.
+- **실행 보호**: DB 변경 액션은 트랜잭션으로 묶고, 순환 실행을 막기 위해 한 워크플로우당 최대 100개 액션만 실행합니다.
 - **트리거**: 클릭(`ON_CLICK`), 페이지 로드, 양식 제출
+
+#### 확장 워크플로우 저장소
+
+`workflows` 테이블에는 프로젝트별 노드·엣지 정의와 활성 상태를, `workflow_logs` 테이블에는 성공·실패 상태와 노드별 실행 결과를 저장합니다. 상세 스키마는 [`docs/db/public.workflows.md`](docs/db/public.workflows.md), [`docs/db/public.workflow_logs.md`](docs/db/public.workflow_logs.md)에서 확인할 수 있습니다.
+
+현재 `POST /api/workflow/execute`는 요청 본문의 액션 체인을 실행합니다. `workflowId`로 저장된 정의를 직접 실행하고 로그를 기록하는 확장 엔진 API는 테이블까지 준비된 상태이며, 다음 단계에서 `WorkflowEngineService`의 모듈 등록과 전용 엔드포인트 연결이 필요합니다.
 
 ### 5. 관계형 동적 쿼리 빌더
 
@@ -200,6 +210,7 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 10. `server/migrations/20260905_schema_and_policies.sql`
 11. `server/migrations/20260905_create_project_datasources.sql`
 12. `server/migrations/20260906_add_project_datasource_name.sql`
+13. `server/migrations/20260906_create_workflows.sql`
 
 이미 `project_datasources` 테이블을 적용한 Docker PostgreSQL에 연결 이름 컬럼을 추가하려면 다음 명령을 사용합니다.
 
@@ -210,6 +221,14 @@ docker compose exec -T db psql -v ON_ERROR_STOP=1 \
 ```
 
 `audit_logs`에는 `project_id`, `user_id`, `action`, `target_table`, `record_id`, `changes`, `ip_address`, `created_at`이 저장됩니다. `changes`는 요청 본문과 응답 요약을 JSON 형식으로 보관합니다.
+
+워크플로우 정의·실행 로그 테이블을 이미 실행 중인 Docker PostgreSQL에 적용하려면 다음 명령을 사용합니다.
+
+```bash
+docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+  -U "${POSTGRES_USER:-bakeapp}" -d "${POSTGRES_DB:-bakeapp}" \
+  -f /docker-entrypoint-initdb.d/20260906_create_workflows.sql
+```
 
 ### 4. ERD 문서 생성 (tbls)
 
@@ -225,6 +244,7 @@ pnpm db:doc
 - 감사 로그 테이블 상세 문서는 `docs/db/public.audit_logs.md`에서 확인할 수 있습니다.
 - 릴리즈 테이블 상세 문서는 `docs/db/public.project_versions.md`, `docs/db/public.project_deployments.md`에서 확인할 수 있습니다.
 - 외부 데이터소스 테이블 상세 문서는 `docs/db/public.project_datasources.md`에서 확인할 수 있습니다.
+- 워크플로우 정의·실행 로그 테이블 상세 문서는 `docs/db/public.workflows.md`, `docs/db/public.workflow_logs.md`에서 확인할 수 있습니다.
 - 별도의 로컬 `tbls` 설치는 필요하지 않습니다. 처음 실행할 때 Docker가 이미지를 내려받습니다.
 
 ### 5. 개발 서버 실행

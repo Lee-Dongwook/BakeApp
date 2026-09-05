@@ -34,7 +34,7 @@ export class WorkflowController {
   @ApiOperation({
     summary: "버튼/이벤트 워크플로우 순차 실행",
     description:
-      "프론트엔드에서 트리거된 연쇄 액션 노드 트리를 백엔드에서 인터프리팅하여 DB 연동 및 클라이언트 액션을 처리합니다.",
+      "프론트엔드에서 트리거된 연쇄 액션 및 조건/반복 노드 트리를 백엔드에서 인터프리팅하여 DB 연동 및 클라이언트 액션을 처리합니다.",
   })
   @ApiBody({
     description: "실행할 워크플로우 페이로드 및 트리거 정보",
@@ -60,12 +60,14 @@ export class WorkflowController {
                   "DB_UPDATE",
                   "DB_DELETE",
                   "CONDITION",
+                  "LOOP",
+                  "RETRY",
                   "API_CALL",
-                  "NAVIGATE",
+                  "NAV_NAVIGATE",
                   "SHOW_ALERT",
                   "SHOW_TOAST",
                 ],
-                example: "DB_INSERT",
+                example: "CONDITION",
               },
               params: { type: "object" },
               nextActionId: { type: "string", example: "node_2" },
@@ -84,6 +86,7 @@ export class WorkflowController {
     if (!payload?.projectId) {
       throw new BadRequestException("projectId는 필수입니다.");
     }
+
     await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
 
     const envMap = payload.projectId
