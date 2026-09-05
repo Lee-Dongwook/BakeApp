@@ -1,14 +1,14 @@
 import { Module } from "@nestjs/common";
-import { DynamicSchemaModule } from "./modules/dynamic-schema/dynamic-schema.module";
-import { DynamicDataModule } from "./modules/dynamic-data/dynamic-data.module";
-import { GeneratorModule } from "./modules/generator/generator.module";
-import { WorkflowModule } from "./modules/workflow/workflow.module";
 import { AuthModule } from "./modules/auth/auth.module";
-import { SchemaModule } from "./modules/schema/schema.module";
 import { DatabaseModule } from "./modules/database/database.module";
-import { ProjectModule } from "./modules/project/project.module";
+import { DynamicDataModule } from "./modules/dynamic-data/dynamic-data.module";
+import { DynamicSchemaModule } from "./modules/dynamic-schema/dynamic-schema.module";
 import { ExportModule } from "./modules/export/export.module";
 import { FigmaModule } from "./modules/figma/figma.module";
+import { GeneratorModule } from "./modules/generator/generator.module";
+import { ProjectModule } from "./modules/project/project.module";
+import { SchemaModule } from "./modules/schema/schema.module";
+import { WorkflowModule } from "./modules/workflow/workflow.module";
 
 @Module({
   imports: [
@@ -24,5 +24,6 @@ import { FigmaModule } from "./modules/figma/figma.module";
     FigmaModule,
   ],
   controllers: [],
+  providers: [],
 })
 export class AppModule {}
