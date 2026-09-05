@@ -11,6 +11,8 @@ format:
 
 er:
   format: svg
+  # 관계선은 유지하고 FOREIGN KEY 정의 문구만 숨겨 ERD 가독성을 높입니다.
+  hideDef: true
   distance: 2
 
 comments:

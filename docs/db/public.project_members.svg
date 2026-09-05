@@ -60,7 +60,6 @@
 <title>public.project_members:project_id&#45;&gt;public.projects:id</title>
 <path fill="none" stroke="black" d="M876.88,-835.98C754.74,-820.19 1006.67,-509.2 864.51,-509.2"/>
 <polygon fill="black" stroke="black" points="876.89,-835.98 886.6,-841.07 882.21,-836.3 886.54,-836.56 886.54,-836.56 886.54,-836.56 882.21,-836.3 887.14,-832.09 876.89,-835.98"/>
-<text text-anchor="start" x="894.2" y="-846.6" font-family="Arial" font-size="10.00">FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.users -->
 <g id="node5" class="node">
@@ -94,14 +93,12 @@
 <title>public.project_members:user_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="black" d="M1044.25,-748.19C1040.74,-706.26 1016.19,-696.33 1008.67,-649.6 987.01,-514.98 984.58,-477.01 1008.67,-342.8 1024.74,-253.31 988.91,-151 1079.83,-151"/>
 <polygon fill="black" stroke="black" points="1044.25,-748.27 1040.16,-758.45 1044.47,-753.6 1044.64,-757.93 1044.64,-757.93 1044.64,-757.93 1044.47,-753.6 1049.15,-758.08 1044.25,-748.27"/>
-<text text-anchor="start" x="1051.67" y="-768.6" font-family="Arial" font-size="10.00">FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.projects&#45;&gt;public.users -->
 <g id="edge4" class="edge">
 <title>public.projects:owner_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="black" d="M874.64,-447.2C1022.79,-434.99 920.43,-151 1079.83,-151"/>
 <polygon fill="black" stroke="black" points="874.84,-447.19 864.67,-443.09 869.51,-447.4 865.18,-447.57 865.18,-447.57 865.18,-447.57 869.51,-447.4 865.03,-452.08 874.84,-447.19"/>
-<text text-anchor="start" x="782.58" y="-431.6" font-family="Arial" font-size="10.00">FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.project_documents -->
 <g id="node3" class="node">
@@ -126,7 +123,6 @@
 <title>public.project_documents:project_id&#45;&gt;public.projects:id</title>
 <path fill="none" stroke="black" d="M379.35,-820.38C428.18,-811.68 386.88,-736.02 420.67,-685.6 484.48,-590.38 494.2,-509.2 608.83,-509.2"/>
 <polygon fill="black" stroke="black" points="379.44,-820.37 369.11,-816.69 374.12,-820.8 369.81,-821.15 369.81,-821.15 369.81,-821.15 374.12,-820.8 369.84,-825.66 379.44,-820.37"/>
-<text text-anchor="start" x="376.14" y="-831.2" font-family="Arial" font-size="10.00">FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.project_schemas -->
 <g id="node4" class="node">
@@ -160,7 +156,6 @@
 <title>public.project_schemas:project_id&#45;&gt;public.projects:id</title>
 <path fill="none" stroke="black" d="M791.81,-835.75C845.66,-826.09 818.65,-736.39 780.64,-685.6 733.13,-622.13 657.38,-697.63 609.83,-634.2 576.51,-589.75 553.27,-509.2 608.83,-509.2"/>
 <polygon fill="black" stroke="black" points="791.94,-835.74 781.6,-832.09 786.62,-836.18 782.3,-836.54 782.3,-836.54 782.3,-836.54 786.62,-836.18 782.34,-841.06 791.94,-835.74"/>
-<text text-anchor="start" x="419.55" y="-846.6" font-family="Arial" font-size="10.00">FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.refresh_tokens -->
 <g id="node6" class="node">
@@ -194,7 +189,6 @@
 <title>public.refresh_tokens:user_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="black" d="M1208.55,-374.79C1218.16,-323.62 1303.88,-361.25 1334.51,-306.8 1368.46,-246.45 1404.76,-151 1335.51,-151"/>
 <polygon fill="black" stroke="black" points="1208.56,-374.7 1203.22,-384.28 1208.1,-380.02 1207.73,-384.33 1207.73,-384.33 1207.73,-384.33 1208.1,-380.02 1212.18,-385.05 1208.56,-374.7"/>
-<text text-anchor="start" x="953.7" y="-369" font-family="Arial" font-size="10.00">FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.tenant_limits -->
 <g id="node7" class="node">
@@ -225,7 +219,6 @@
 <title>public.tenant_limits:user_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="black" d="M1447.65,-414.5C1393.32,-388.52 1396.96,-151 1335.51,-151"/>
 <polygon fill="black" stroke="black" points="1447.61,-414.49 1456.35,-421.11 1452.81,-415.68 1457.03,-416.65 1457.03,-416.65 1457.03,-416.65 1452.81,-415.68 1458.36,-412.34 1447.61,-414.49"/>
-<text text-anchor="start" x="1464.68" y="-426.8" font-family="Arial" font-size="10.00">FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE</text>
 </g>
 <!-- public.user_terms_agreements -->
 <g id="node8" class="node">
@@ -259,7 +252,6 @@
 <title>public.user_terms_agreements:user_id&#45;&gt;public.users:id</title>
 <path fill="none" stroke="black" d="M1833.62,-400C1811.27,-392.94 1817.49,-360.74 1792.67,-342.8 1614.08,-213.75 1555.85,-151 1335.51,-151"/>
 <polygon fill="black" stroke="black" points="1833.47,-399.98 1842.76,-405.81 1838.76,-400.72 1843.05,-401.31 1843.05,-401.31 1843.05,-401.31 1838.76,-400.72 1844,-396.9 1833.47,-399.98"/>
-<text text-anchor="start" x="1589.74" y="-385.4" font-family="Arial" font-size="10.00">FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE</text>
 </g>
 </g>
 </svg>
