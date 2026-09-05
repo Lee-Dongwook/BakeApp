@@ -103,7 +103,8 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 4. `server/migrations/20260902_create_project_members.sql`
 5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql`
 6. `server/migrations/20260903_create_refresh_tokens.sql`
-7. `server/migrations/20260905_schema_and_policies.sql`
+7. `server/migrations/20260905_pg_crypto.sql`
+8. `server/migrations/20260905_schema_and_policies.sql`
 
 ### 4. ERD 문서 생성 (tbls)
 

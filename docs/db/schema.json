@@ -62,6 +62,120 @@
       ]
     },
     {
+      "name": "public.project_environments",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "is_secret",
+          "type": "boolean",
+          "nullable": true,
+          "default": "false"
+        },
+        {
+          "name": "key",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "value",
+          "type": "text",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_project_environments_project_id",
+          "def": "CREATE INDEX idx_project_environments_project_id ON public.project_environments USING btree (project_id)",
+          "table": "public.project_environments",
+          "columns": [
+            "project_id"
+          ]
+        },
+        {
+          "name": "project_environments_pkey",
+          "def": "CREATE UNIQUE INDEX project_environments_pkey ON public.project_environments USING btree (id)",
+          "table": "public.project_environments",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "unique_project_env_key",
+          "def": "CREATE UNIQUE INDEX unique_project_env_key ON public.project_environments USING btree (project_id, key)",
+          "table": "public.project_environments",
+          "columns": [
+            "project_id",
+            "key"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_environments_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.project_environments",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_environments_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_environments",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "unique_project_env_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, key)",
+          "table": "public.project_environments",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "key"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "update_project_environments_updated_at",
+          "def": "CREATE TRIGGER update_project_environments_updated_at BEFORE UPDATE ON public.project_environments FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        }
+      ]
+    },
+    {
       "name": "public.project_members",
       "type": "BASE TABLE",
       "comment": "프로젝트별 협업 권한",
@@ -443,6 +557,127 @@
       ]
     },
     {
+      "name": "public.runtime_users",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "email",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "metadata",
+          "type": "jsonb",
+          "nullable": true,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "password_hash",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "role",
+          "type": "varchar(50)",
+          "nullable": false,
+          "default": "'user'::character varying"
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_runtime_users_project_email",
+          "def": "CREATE INDEX idx_runtime_users_project_email ON public.runtime_users USING btree (project_id, email)",
+          "table": "public.runtime_users",
+          "columns": [
+            "project_id",
+            "email"
+          ]
+        },
+        {
+          "name": "runtime_users_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_users_pkey ON public.runtime_users USING btree (id)",
+          "table": "public.runtime_users",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "unique_project_runtime_user_email",
+          "def": "CREATE UNIQUE INDEX unique_project_runtime_user_email ON public.runtime_users USING btree (project_id, email)",
+          "table": "public.runtime_users",
+          "columns": [
+            "project_id",
+            "email"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_users_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.runtime_users",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_users_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.runtime_users",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "unique_project_runtime_user_email",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, email)",
+          "table": "public.runtime_users",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "email"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "update_runtime_users_updated_at",
+          "def": "CREATE TRIGGER update_runtime_users_updated_at BEFORE UPDATE ON public.runtime_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        }
+      ]
+    },
+    {
       "name": "public.tenant_limits",
       "type": "BASE TABLE",
       "comment": "사용자 플랜별 프로젝트 및 내보내기 한도",
@@ -685,6 +920,19 @@
       "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     },
     {
+      "table": "public.project_environments",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
       "table": "public.project_members",
       "columns": [
         "user_id"
@@ -748,6 +996,19 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_users",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     },
     {
       "table": "public.tenant_limits",
@@ -991,6 +1252,12 @@
       "name": "public.pgp_sym_encrypt_bytea",
       "return_type": "bytea",
       "arguments": "bytea, text, text",
+      "type": "FUNCTION"
+    },
+    {
+      "name": "public.update_updated_at_column",
+      "return_type": "trigger",
+      "arguments": "",
       "type": "FUNCTION"
     }
   ],
