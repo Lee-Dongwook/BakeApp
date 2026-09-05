@@ -33,6 +33,13 @@ export class ProjectService {
         [project.id, ownerId],
       );
 
+      await client.query(
+        `INSERT INTO project_documents (project_id, document)
+         VALUES ($1, $2)
+         ON CONFLICT (project_id) DO NOTHING`,
+        [project.id, JSON.stringify({ nodes: [], edges: [] })],
+      );
+
       return project;
     });
   }
@@ -65,7 +72,7 @@ export class ProjectService {
        FROM projects p
        LEFT JOIN project_members pm ON pm.project_id = p.id
        WHERE p.owner_id = $1 OR pm.user_id = $1
-       ORDER BY "updatedAt" DESC`,
+       ORDER BY p.updated_at DESC`,
       [userId],
     );
 
@@ -101,7 +108,9 @@ export class ProjectService {
 
     const project = result.rows[0];
     if (!project) {
-      throw new NotFoundException("프로젝트를 찾을 수 없거나 접근 권한이 없습니다.");
+      throw new NotFoundException(
+        "프로젝트를 찾을 수 없거나 접근 권한이 없습니다.",
+      );
     }
 
     return project;
@@ -114,7 +123,7 @@ export class ProjectService {
          FROM projects p
          LEFT JOIN project_members pm ON pm.project_id = p.id AND pm.user_id = $2
          WHERE p.id = $1
-           AND (p.owner_id = $2 OR pm.role = $3)
+           AND (p.owner_id = $2 OR pm.role IN ('owner', $3))
        ) AS "canEdit"`,
       [id, userId, ProjectMemberRole.EDITOR],
     );
