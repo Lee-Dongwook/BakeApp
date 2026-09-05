@@ -6,13 +6,16 @@ BakeApp Studio의 인증·프로젝트·동적 데이터 스키마
 
 ## Tables
 
-| Name                                                    | Columns | Comment                                 | Type       |
-| ------------------------------------------------------- | ------- | --------------------------------------- | ---------- |
-| [public.project_documents](public.project_documents.md) | 3       | 프로젝트 편집 상태를 보관하는 JSON 문서                | BASE TABLE |
-| [public.project_members](public.project_members.md)     | 4       | 프로젝트별 협업 권한                             | BASE TABLE |
-| [public.projects](public.projects.md)                   | 5       | 사용자가 소유하는 앱 빌더 프로젝트                     | BASE TABLE |
-| [public.refresh_tokens](public.refresh_tokens.md)       | 6       | 해시된 갱신 토큰                               | BASE TABLE |
-| [public.users](public.users.md)                         | 6       | BakeApp 자체 인증 사용자                       | BASE TABLE |
+| Name                                                            | Columns | Comment                                 | Type       |
+| --------------------------------------------------------------- | ------- | --------------------------------------- | ---------- |
+| [public.project_documents](public.project_documents.md)         | 3       | 프로젝트 편집 상태를 보관하는 JSON 문서                | BASE TABLE |
+| [public.project_members](public.project_members.md)             | 4       | 프로젝트별 협업 권한                             | BASE TABLE |
+| [public.project_schemas](public.project_schemas.md)             | 6       | 프로젝트별 동적 데이터 스키마 정의                     | BASE TABLE |
+| [public.projects](public.projects.md)                           | 5       | 사용자가 소유하는 앱 빌더 프로젝트                     | BASE TABLE |
+| [public.refresh_tokens](public.refresh_tokens.md)               | 6       | 해시된 갱신 토큰                               | BASE TABLE |
+| [public.tenant_limits](public.tenant_limits.md)                 | 5       | 사용자 플랜별 프로젝트 및 내보내기 한도                  | BASE TABLE |
+| [public.user_terms_agreements](public.user_terms_agreements.md) | 6       | 사용자 약관 및 선택 동의 이력                       | BASE TABLE |
+| [public.users](public.users.md)                                 | 6       | BakeApp 자체 인증 사용자                       | BASE TABLE |
 
 ## Stored procedures and functions
 

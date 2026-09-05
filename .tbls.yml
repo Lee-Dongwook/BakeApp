@@ -24,3 +24,9 @@ comments:
     tableComment: 프로젝트별 협업 권한
   - table: refresh_tokens
     tableComment: 해시된 갱신 토큰
+  - table: project_schemas
+    tableComment: 프로젝트별 동적 데이터 스키마 정의
+  - table: tenant_limits
+    tableComment: 사용자 플랜별 프로젝트 및 내보내기 한도
+  - table: user_terms_agreements
+    tableComment: 사용자 약관 및 선택 동의 이력

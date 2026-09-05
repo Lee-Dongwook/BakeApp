@@ -30,7 +30,9 @@
           "name": "project_documents_pkey",
           "def": "CREATE UNIQUE INDEX project_documents_pkey ON public.project_documents USING btree (project_id)",
           "table": "public.project_documents",
-          "columns": ["project_id"]
+          "columns": [
+            "project_id"
+          ]
         }
       ],
       "constraints": [
@@ -40,7 +42,9 @@
           "def": "PRIMARY KEY (project_id)",
           "table": "public.project_documents",
           "referenced_table": "",
-          "columns": ["project_id"]
+          "columns": [
+            "project_id"
+          ]
         },
         {
           "name": "project_documents_project_id_fkey",
@@ -48,8 +52,12 @@
           "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
           "table": "public.project_documents",
           "referenced_table": "public.projects",
-          "columns": ["project_id"],
-          "referenced_columns": ["id"]
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
         }
       ]
     },
@@ -85,13 +93,19 @@
           "name": "project_members_pkey",
           "def": "CREATE UNIQUE INDEX project_members_pkey ON public.project_members USING btree (project_id, user_id)",
           "table": "public.project_members",
-          "columns": ["project_id", "user_id"]
+          "columns": [
+            "project_id",
+            "user_id"
+          ]
         },
         {
           "name": "project_members_user_project_idx",
           "def": "CREATE INDEX project_members_user_project_idx ON public.project_members USING btree (user_id, project_id)",
           "table": "public.project_members",
-          "columns": ["user_id", "project_id"]
+          "columns": [
+            "user_id",
+            "project_id"
+          ]
         }
       ],
       "constraints": [
@@ -101,7 +115,10 @@
           "def": "PRIMARY KEY (project_id, user_id)",
           "table": "public.project_members",
           "referenced_table": "",
-          "columns": ["project_id", "user_id"]
+          "columns": [
+            "project_id",
+            "user_id"
+          ]
         },
         {
           "name": "project_members_project_id_fkey",
@@ -109,8 +126,12 @@
           "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
           "table": "public.project_members",
           "referenced_table": "public.projects",
-          "columns": ["project_id"],
-          "referenced_columns": ["id"]
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
         },
         {
           "name": "project_members_role_check",
@@ -118,7 +139,9 @@
           "def": "CHECK ((role = ANY (ARRAY['owner'::text, 'editor'::text, 'viewer'::text])))",
           "table": "public.project_members",
           "referenced_table": "",
-          "columns": ["role"]
+          "columns": [
+            "role"
+          ]
         },
         {
           "name": "project_members_user_id_fkey",
@@ -126,8 +149,107 @@
           "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
           "table": "public.project_members",
           "referenced_table": "public.users",
-          "columns": ["user_id"],
-          "referenced_columns": ["id"]
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.project_schemas",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 동적 데이터 스키마 정의",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "now()"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "schema_definition",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "table_name",
+          "type": "varchar(64)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_schemas_pkey",
+          "def": "CREATE UNIQUE INDEX project_schemas_pkey ON public.project_schemas USING btree (id)",
+          "table": "public.project_schemas",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_project_schema_table",
+          "def": "CREATE UNIQUE INDEX uq_project_schema_table ON public.project_schemas USING btree (project_id, table_name)",
+          "table": "public.project_schemas",
+          "columns": [
+            "project_id",
+            "table_name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_schemas_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.project_schemas",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_schemas_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_schemas",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "uq_project_schema_table",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, table_name)",
+          "table": "public.project_schemas",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "table_name"
+          ]
         }
       ]
     },
@@ -170,13 +292,18 @@
           "name": "projects_owner_updated_at_idx",
           "def": "CREATE INDEX projects_owner_updated_at_idx ON public.projects USING btree (owner_id, updated_at DESC)",
           "table": "public.projects",
-          "columns": ["owner_id", "updated_at"]
+          "columns": [
+            "owner_id",
+            "updated_at"
+          ]
         },
         {
           "name": "projects_pkey",
           "def": "CREATE UNIQUE INDEX projects_pkey ON public.projects USING btree (id)",
           "table": "public.projects",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         }
       ],
       "constraints": [
@@ -186,7 +313,9 @@
           "def": "CHECK ((char_length(btrim((name)::text)) \u003e 0))",
           "table": "public.projects",
           "referenced_table": "",
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         },
         {
           "name": "projects_owner_id_fkey",
@@ -194,8 +323,12 @@
           "def": "FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE",
           "table": "public.projects",
           "referenced_table": "public.users",
-          "columns": ["owner_id"],
-          "referenced_columns": ["id"]
+          "columns": [
+            "owner_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
         },
         {
           "name": "projects_pkey",
@@ -203,7 +336,9 @@
           "def": "PRIMARY KEY (id)",
           "table": "public.projects",
           "referenced_table": "",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         }
       ]
     },
@@ -250,19 +385,25 @@
           "name": "refresh_tokens_pkey",
           "def": "CREATE UNIQUE INDEX refresh_tokens_pkey ON public.refresh_tokens USING btree (id)",
           "table": "public.refresh_tokens",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         },
         {
           "name": "refresh_tokens_token_hash_key",
           "def": "CREATE UNIQUE INDEX refresh_tokens_token_hash_key ON public.refresh_tokens USING btree (token_hash)",
           "table": "public.refresh_tokens",
-          "columns": ["token_hash"]
+          "columns": [
+            "token_hash"
+          ]
         },
         {
           "name": "refresh_tokens_user_id_idx",
           "def": "CREATE INDEX refresh_tokens_user_id_idx ON public.refresh_tokens USING btree (user_id)",
           "table": "public.refresh_tokens",
-          "columns": ["user_id"]
+          "columns": [
+            "user_id"
+          ]
         }
       ],
       "constraints": [
@@ -272,7 +413,9 @@
           "def": "PRIMARY KEY (id)",
           "table": "public.refresh_tokens",
           "referenced_table": "",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         },
         {
           "name": "refresh_tokens_token_hash_key",
@@ -280,7 +423,9 @@
           "def": "UNIQUE (token_hash)",
           "table": "public.refresh_tokens",
           "referenced_table": "",
-          "columns": ["token_hash"]
+          "columns": [
+            "token_hash"
+          ]
         },
         {
           "name": "refresh_tokens_user_id_fkey",
@@ -288,8 +433,158 @@
           "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
           "table": "public.refresh_tokens",
           "referenced_table": "public.users",
-          "columns": ["user_id"],
-          "referenced_columns": ["id"]
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.tenant_limits",
+      "type": "BASE TABLE",
+      "comment": "사용자 플랜별 프로젝트 및 내보내기 한도",
+      "columns": [
+        {
+          "name": "allow_code_export",
+          "type": "boolean",
+          "nullable": true,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "now()"
+        },
+        {
+          "name": "max_projects",
+          "type": "integer",
+          "nullable": true,
+          "default": "3"
+        },
+        {
+          "name": "plan_type",
+          "type": "varchar(20)",
+          "nullable": true,
+          "default": "'FREE'::character varying"
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "tenant_limits_pkey",
+          "def": "CREATE UNIQUE INDEX tenant_limits_pkey ON public.tenant_limits USING btree (user_id)",
+          "table": "public.tenant_limits",
+          "columns": [
+            "user_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "tenant_limits_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (user_id)",
+          "table": "public.tenant_limits",
+          "referenced_table": "",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "tenant_limits_user_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "table": "public.tenant_limits",
+          "referenced_table": "public.users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.user_terms_agreements",
+      "type": "BASE TABLE",
+      "comment": "사용자 약관 및 선택 동의 이력",
+      "columns": [
+        {
+          "name": "agreed_at",
+          "type": "timestamp with time zone",
+          "nullable": true,
+          "default": "now()"
+        },
+        {
+          "name": "consents",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "ip_address",
+          "type": "varchar(45)",
+          "nullable": true
+        },
+        {
+          "name": "terms_version",
+          "type": "varchar(20)",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "user_terms_agreements_pkey",
+          "def": "CREATE UNIQUE INDEX user_terms_agreements_pkey ON public.user_terms_agreements USING btree (id)",
+          "table": "public.user_terms_agreements",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "user_terms_agreements_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.user_terms_agreements",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "user_terms_agreements_user_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE",
+          "table": "public.user_terms_agreements",
+          "referenced_table": "public.users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
         }
       ]
     },
@@ -338,13 +633,17 @@
           "name": "users_email_key",
           "def": "CREATE UNIQUE INDEX users_email_key ON public.users USING btree (email)",
           "table": "public.users",
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         },
         {
           "name": "users_pkey",
           "def": "CREATE UNIQUE INDEX users_pkey ON public.users USING btree (id)",
           "table": "public.users",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         }
       ],
       "constraints": [
@@ -354,7 +653,9 @@
           "def": "UNIQUE (email)",
           "table": "public.users",
           "referenced_table": "",
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         },
         {
           "name": "users_pkey",
@@ -362,7 +663,9 @@
           "def": "PRIMARY KEY (id)",
           "table": "public.users",
           "referenced_table": "",
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         }
       ]
     }
@@ -370,46 +673,105 @@
   "relations": [
     {
       "table": "public.project_documents",
-      "columns": ["project_id"],
+      "columns": [
+        "project_id"
+      ],
       "cardinality": "zero_or_one",
       "parent_table": "public.projects",
-      "parent_columns": ["id"],
+      "parent_columns": [
+        "id"
+      ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     },
     {
       "table": "public.project_members",
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "cardinality": "zero_or_more",
       "parent_table": "public.users",
-      "parent_columns": ["id"],
+      "parent_columns": [
+        "id"
+      ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
     },
     {
       "table": "public.project_members",
-      "columns": ["project_id"],
+      "columns": [
+        "project_id"
+      ],
       "cardinality": "zero_or_more",
       "parent_table": "public.projects",
-      "parent_columns": ["id"],
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_schemas",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     },
     {
       "table": "public.projects",
-      "columns": ["owner_id"],
+      "columns": [
+        "owner_id"
+      ],
       "cardinality": "zero_or_more",
       "parent_table": "public.users",
-      "parent_columns": ["id"],
+      "parent_columns": [
+        "id"
+      ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (owner_id) REFERENCES users(id) ON DELETE CASCADE"
     },
     {
       "table": "public.refresh_tokens",
-      "columns": ["user_id"],
+      "columns": [
+        "user_id"
+      ],
       "cardinality": "zero_or_more",
       "parent_table": "public.users",
-      "parent_columns": ["id"],
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.tenant_limits",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_one",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.user_terms_agreements",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
     }
@@ -637,7 +999,10 @@
     "database_version": "PostgreSQL 17.11 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit",
     "meta": {
       "current_schema": "public",
-      "search_paths": ["bakeapp", "public"],
+      "search_paths": [
+        "bakeapp",
+        "public"
+      ],
       "dict": {
         "Functions": "Stored procedures and functions"
       }
