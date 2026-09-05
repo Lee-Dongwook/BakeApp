@@ -16,6 +16,7 @@ import { AuditModule } from "./modules/audit/audit.module";
 import { ReleaseModule } from "./modules/release/release.module";
 import { EnvironmentModule } from "./modules/environment/environment.module";
 import { RuntimeAuthModule } from "./modules/runtime-auth/runtime-auth.module";
+import { ExternalDatasourceModule } from "./modules/datasource/external-datasource.module";
 
 @Module({
   imports: [
@@ -38,6 +39,7 @@ import { RuntimeAuthModule } from "./modules/runtime-auth/runtime-auth.module";
       serveRoot: "/uploads",
     }),
     ReleaseModule,
+    ExternalDatasourceModule,
   ],
   controllers: [],
   providers: [],

@@ -38,3 +38,5 @@ comments:
     tableComment: 프로젝트별 릴리즈 버전 스냅샷
   - table: project_deployments
     tableComment: 프로젝트별 현재 프로덕션 배포 버전
+  - table: project_datasources
+    tableComment: 프로젝트별 외부 데이터베이스 연결 설정

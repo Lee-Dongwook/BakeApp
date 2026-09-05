@@ -132,6 +132,110 @@
       ]
     },
     {
+      "name": "public.project_datasources",
+      "type": "BASE TABLE",
+      "comment": "프로젝트별 외부 데이터베이스 연결 설정",
+      "columns": [
+        {
+          "name": "config",
+          "type": "jsonb",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_datasources_pkey",
+          "def": "CREATE UNIQUE INDEX project_datasources_pkey ON public.project_datasources USING btree (id)",
+          "table": "public.project_datasources",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_datasources_project_updated_at_idx",
+          "def": "CREATE INDEX project_datasources_project_updated_at_idx ON public.project_datasources USING btree (project_id, updated_at DESC)",
+          "table": "public.project_datasources",
+          "columns": [
+            "project_id",
+            "updated_at"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_datasources_config_check",
+          "type": "CHECK",
+          "def": "CHECK ((jsonb_typeof(config) = 'object'::text))",
+          "table": "public.project_datasources",
+          "referenced_table": "",
+          "columns": [
+            "config"
+          ]
+        },
+        {
+          "name": "project_datasources_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.project_datasources",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_datasources_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_datasources",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_datasources_type_check",
+          "type": "CHECK",
+          "def": "CHECK ((type = 'POSTGRESQL'::text))",
+          "table": "public.project_datasources",
+          "referenced_table": "",
+          "columns": [
+            "type"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.project_deployments",
       "type": "BASE TABLE",
       "comment": "프로젝트별 현재 프로덕션 배포 버전",
@@ -1299,6 +1403,19 @@
       ],
       "parent_cardinality": "zero_or_one",
       "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL"
+    },
+    {
+      "table": "public.project_datasources",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
     },
     {
       "table": "public.project_deployments",

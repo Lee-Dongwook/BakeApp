@@ -184,6 +184,7 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 8. `server/migrations/20260905_create_project_releases.sql`
 9. `server/migrations/20260905_pg_crypto.sql`
 10. `server/migrations/20260905_schema_and_policies.sql`
+11. `server/migrations/20260905_create_project_datasources.sql`
 
 이미 실행 중인 Docker PostgreSQL에 새 마이그레이션만 적용하려면 다음 명령을 사용합니다.
 
@@ -208,6 +209,7 @@ pnpm db:doc
 - 생성 결과는 `docs/db/README.md`와 `docs/db/schema.svg`입니다.
 - 감사 로그 테이블 상세 문서는 `docs/db/public.audit_logs.md`에서 확인할 수 있습니다.
 - 릴리즈 테이블 상세 문서는 `docs/db/public.project_versions.md`, `docs/db/public.project_deployments.md`에서 확인할 수 있습니다.
+- 외부 데이터소스 테이블 상세 문서는 `docs/db/public.project_datasources.md`에서 확인할 수 있습니다.
 - 별도의 로컬 `tbls` 설치는 필요하지 않습니다. 처음 실행할 때 Docker가 이미지를 내려받습니다.
 
 ### 5. 개발 서버 실행
