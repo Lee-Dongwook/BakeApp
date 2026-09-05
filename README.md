@@ -12,15 +12,20 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 - **자체 인증 & 세션 갱신**: scrypt 해시 기반 회원가입/로그인, 15분 Access Token 및 HttpOnly Refresh Token 자동 회전 갱신
 - **역할 기반 접근 제어 (RBAC)**: `owner`, `editor`, `viewer` 권한 모델
-- **프로젝트 대시보드**: 프로젝트 생성, 실시간 조회, 이름 변경 및 삭제
+- **프로젝트 협업**: 소유자가 이메일 또는 사용자 ID로 `editor`·`viewer`를 초대하고, 역할을 변경하거나 멤버를 제거
+- **테넌트 정책**: 사용자별 프로젝트 생성 한도와 코드 내보내기 권한을 PostgreSQL에서 관리
+- **프로젝트 대시보드**: 프로젝트 생성, 접근 가능한 프로젝트 조회, 이름 변경 및 삭제
 
 ### 2. 고도화된 시각적 화면 편집기 (Canvas Builder)
 
 - **풍부한 컴포넌트 팔레트**:
-  - 📦 **레이아웃**: `Box (View)`, `Card (카드)`, `Form (양식)`, `Divider (구분선)`
-  - ✏️ **텍스트 & 미디어**: `Text (텍스트)`, `Image (이미지)`, `Badge (상태 뱃지)`
-  - 🔘 **양식 & 컨트롤**: `TextInput (입력)`, `Select (드롭다운)`, `Checkbox (체크박스)`, `Button (버튼)`
-  - 🗄️ **데이터 바인딩**: `Data List (동적 목록)`, `Table (데이터 그리드)`
+  - 📦 **레이아웃**: `Box (View)`, `Row`, `Column`, `Grid`, `Card`, `Modal`, `Tabs`, `Form`, `Divider`
+  - ✏️ **텍스트 & 미디어**: `Heading`, `Text`, `Lucide Icon`, `Avatar`, `Image`, `Badge`
+  - 🔘 **양식 & 컨트롤**: `TextInput`, `TextArea`, `Select`, `Checkbox`, `Switch`, `DatePicker`, `Button`
+  - 📊 **데이터 & 대시보드**: `StatCard`, `Chart`, `Data List`
+- **멀티 페이지 라우팅**: 페이지 이름과 `/users/:id` 같은 경로를 정의하고, URL 파라미터를 바인딩해 미리보기에서 전환
+- **API Query Manager**: 외부 REST API Query를 저장·테스트하고, `{{ form.email }}`, `{{ params.id }}` 같은 동적 값을 URL·본문에 치환
+- **스타일·아이콘 편집**: 속성 인스펙터에서 요소 스타일과 Lucide 아이콘을 선택
 - **반응형 뷰포트 전환**:
   - 📱 Mobile Portrait (375px)
   - 📱 Mobile Large (430px)
@@ -34,7 +39,8 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
 
 - **Dynamic DB Builder**: 프로젝트별 테이블 및 컬럼(타입/필수 여부) 시각적 생성
 - **실시간 데이터 바인딩**: `Data List` 및 양식 컴포넌트에서 실시간 스키마 드롭다운 선택
-- **CRUD 레코드 관리**: 빌더 내에서 직접 레코드 등록 및 최근 5건 미리보기
+- **CRUD 레코드 관리**: 빌더 내에서 직접 레코드 등록·수정·삭제 및 페이지네이션 조회
+- **동적 OpenAPI 문서**: 생성한 테이블의 컬럼 정보를 Swagger 스키마와 API 경로에 반영
 
 ### 4. 워크플로우 엔진 (Workflow & Action Chaining)
 
@@ -42,20 +48,88 @@ BakeApp Studio는 PostgreSQL 기반 내부 업무 도구를 시각적으로 설�
   - `DB_INSERT`: 테이블에 레코드 등록
   - `DB_UPDATE`: 대상 테이블 레코드 수정
   - `DB_DELETE`: 대상 테이블 레코드 삭제
+  - `CONDITION`: 비교 연산자와 분기 액션으로 조건부 실행
   - `API_CALL`: 외부 엔드포인트 REST API 호출
   - `RUN_QUERY`: 프로젝트에 저장된 API Query 실행
   - `NAVIGATE`: 페이지 전환 및 외부 링크 이동
   - `SHOW_TOAST` / `SHOW_ALERT`: 인앱 토스트 알림 표시
-  - `SET_FIELD`: 런타임 폼 필드 상태 변경
+  - `OPEN_MODAL` / `CLOSE_MODAL`: 모달 열기·닫기
+  - `SET_PAGE_STATE` / `SET_APP_STATE`: 페이지·앱 상태 변경
+  - `RESET_FORM` / `COPY_CLIPBOARD`: 폼 초기화 및 클립보드 복사
 - **동적 변수 바인딩**: `{{ form.name }}`, `{{ params.id }}`, `{{ steps.act_1.id }}` 자동 치환
 - **트리거**: 클릭(`ON_CLICK`), 페이지 로드, 양식 제출
 
-### 5. 코드 생성 및 프로젝트 전체 Zip 내보내기
+### 5. 관계형 동적 쿼리 빌더
+
+- **프로젝트 테이블 격리**: 프로젝트 ID 기반의 테이블 이름만 사용해 다른 프로젝트 데이터 접근을 차단
+- **조인·필터·정렬**: `LEFT`/`INNER` 조인, 비교·포함·NULL 조건, 정렬과 페이지네이션을 조합해 조회
+- **안전한 SQL 생성**: 테이블·컬럼 식별자는 검증하고 값은 파라미터 바인딩으로 전달
+
+### 6. 코드 생성 및 프로젝트 전체 Zip 내보내기
 
 - **React 19 + Tailwind CSS TSX 코드 생성**: 최신 React 컴포넌트 구조로 클린 코드 출력
 - **React Native 코드 생성**: 네이티브 컴포넌트(`View`, `Text`, `TextInput`, `Pressable`, `Image`, `Switch`) 호환 소스 출력
 - **원클릭 전체 프로젝트 Zip 내보내기 (`GET /api/export/:projectId/zip`)**:
   - `package.json`, `tsconfig.json`, `vite.config.ts`, `index.html`, `src/App.tsx`, `src/pages/*.tsx`를 포함한 완전한 독립 실행형 Vite 프로젝트 아카이브 즉시 다운로드
+
+### 7. Figma 디자인 가져오기
+
+- **Figma 링크·fileKey 지원**: 파일 또는 Frame 링크에서 `fileKey`, 선택적 `nodeId`를 추출
+- **캔버스 변환**: Figma의 텍스트·프레임·그룹·컴포넌트·사각형을 BakeApp 캔버스 노드로 변환
+- **편집기 연동**: 가져온 결과를 새 페이지로 추가해 기존 노코드 편집 흐름에서 바로 수정
+
+### 8. 감사 로그 (Audit Log)
+
+- **변경 이력 저장 기반**: `AuditService`와 `AuditInterceptor`는 쓰기 요청의 액션(`CREATE`, `UPDATE`, `DELETE`), 대상 테이블·레코드, 변경 데이터(JSON), 요청 IP를 `audit_logs`에 기록하도록 구성
+- **추적 정보**: 요청한 사용자와 프로젝트를 함께 보관하여 프로젝트·사용자별 변경 이력을 조회할 수 있도록 인덱스 구성
+- **기록 보존**: 프로젝트 또는 사용자가 삭제되면 참조 값만 `NULL`로 바꾸고 감사 기록 자체는 유지
+
+#### 구현 파일
+
+| 파일                                               | 역할                                                                             |
+| -------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `server/src/modules/audit/audit.service.ts`        | 파라미터를 JSONB로 변환하여 `audit_logs`에 저장                                  |
+| `server/src/modules/audit/audit.interceptor.ts`    | `GET`/`OPTIONS`/`HEAD`를 제외한 요청을 감지하고 HTTP 메서드를 감사 액션으로 변환 |
+| `server/migrations/20260905_create_audit_logs.sql` | 테이블, 외래 키, 조회 인덱스 생성                                                |
+| `.tbls.yml`                                        | `audit_logs`의 tbls 설명 설정                                                    |
+
+#### 저장 구조 및 조회 성능
+
+| 컬럼                        | 설명                                                                        |
+| --------------------------- | --------------------------------------------------------------------------- |
+| `id`                        | 감사 로그 고유 UUID                                                         |
+| `project_id`, `user_id`     | 변경이 발생한 프로젝트와 요청 사용자. 삭제 시 `NULL`로 변경하여 로그는 보존 |
+| `action`                    | `CREATE`, `UPDATE`, `DELETE` 등 변경 액션                                   |
+| `target_table`, `record_id` | 변경 대상 테이블 및 레코드 UUID                                             |
+| `changes`                   | 요청 본문과 응답 성공 여부를 담는 JSONB 데이터                              |
+| `ip_address`                | IPv4/IPv6 요청 IP 주소                                                      |
+| `created_at`                | 로그 생성 시각                                                              |
+
+프로젝트별·사용자별 최신 로그 조회와 특정 레코드 변경 이력 조회를 위해 다음 인덱스를 생성합니다.
+
+- `audit_logs_project_created_at_idx` — `(project_id, created_at DESC)`
+- `audit_logs_user_created_at_idx` — `(user_id, created_at DESC)`
+- `audit_logs_target_record_idx` — `(target_table, record_id)`
+
+#### 적용 상태와 다음 연동 작업
+
+마이그레이션과 tbls 문서는 반영되어 있습니다. `AuditService`와 `AuditInterceptor`도 구현되어 있지만, 현재 `AppModule`에는 아직 등록되지 않았습니다. 실제 API 요청에 로그를 남기려면 다음 작업이 추가로 필요합니다.
+
+1. `AuditModule`을 만들고 `AuditService`와 `AuditInterceptor`를 provider로 등록합니다.
+2. `AppModule`에서 `AuditModule`을 import합니다.
+3. 필요한 컨트롤러 또는 전역 범위에 `AuditInterceptor`를 적용합니다.
+
+감사 로그 기록 실패는 원래 API 처리 결과를 막지 않고 서버 콘솔에 오류만 남기도록 설계되어 있습니다.
+
+### 9. 연동 예정 백엔드 기능
+
+다음 기능은 관련 서비스와 컨트롤러 소스가 추가되어 있으나, 현재 Nest 모듈 등록이 완료되지 않아 실행 중인 API에서는 사용할 수 없습니다.
+
+- **프로젝트 환경 변수**: 일반 값과 AES 암호화 Secret 값을 프로젝트별로 저장하고, 워크플로우 컨텍스트의 `env`로 주입
+- **최종 사용자 인증**: 빌더 사용자와 분리된 프로젝트별 런타임 사용자 회원가입·로그인 및 Runtime JWT 발급
+- **로컬 파일 저장소**: 프로젝트 권한에 따라 파일 업로드·다운로드·삭제, `/uploads` 정적 경로 제공
+
+이 기능들은 `EnvironmentModule`, `RuntimeAuthModule`, `StorageModule`을 만들고 `AppModule`에 등록한 뒤 사용해야 합니다.
 
 ---
 
@@ -103,8 +177,19 @@ FIGMA_ACCESS_TOKEN=your_figma_personal_access_token_here
 4. `server/migrations/20260902_create_project_members.sql`
 5. `server/migrations/20260902_disable_legacy_dynamic_table_rls.sql`
 6. `server/migrations/20260903_create_refresh_tokens.sql`
-7. `server/migrations/20260905_pg_crypto.sql`
-8. `server/migrations/20260905_schema_and_policies.sql`
+7. `server/migrations/20260905_create_audit_logs.sql`
+8. `server/migrations/20260905_pg_crypto.sql`
+9. `server/migrations/20260905_schema_and_policies.sql`
+
+이미 실행 중인 Docker PostgreSQL에 새 마이그레이션만 적용하려면 다음 명령을 사용합니다.
+
+```bash
+docker compose exec -T db psql -v ON_ERROR_STOP=1 \
+  -U "${POSTGRES_USER:-bakeapp}" -d "${POSTGRES_DB:-bakeapp}" \
+  -f /docker-entrypoint-initdb.d/20260905_create_audit_logs.sql
+```
+
+`audit_logs`에는 `project_id`, `user_id`, `action`, `target_table`, `record_id`, `changes`, `ip_address`, `created_at`이 저장됩니다. `changes`는 요청 본문과 응답 요약을 JSON 형식으로 보관합니다.
 
 ### 4. ERD 문서 생성 (tbls)
 
@@ -117,6 +202,7 @@ pnpm db:doc
 
 - 접속 정보는 Docker Compose의 `POSTGRES_*` 환경 변수로만 전달하며, `.tbls.yml`에는 저장하지 않습니다.
 - 생성 결과는 `docs/db/README.md`와 `docs/db/schema.svg`입니다.
+- 감사 로그 테이블 상세 문서는 `docs/db/public.audit_logs.md`에서 확인할 수 있습니다.
 - 별도의 로컬 `tbls` 설치는 필요하지 않습니다. 처음 실행할 때 Docker가 이미지를 내려받습니다.
 
 ### 5. 개발 서버 실행
@@ -152,13 +238,17 @@ pnpm dev
 |                     | `POST /api/auth/signin`                                     | 로그인 & 토큰 발급                          |
 |                     | `POST /api/auth/refresh`                                    | 토큰 갱신                                   |
 |                     | `POST /api/auth/logout`                                     | 로그아웃                                    |
-| **프로젝트**        | `GET, POST /api/projects`                                   | 프로젝트 목록 및 생성                       |
+| **프로젝트**        | `GET, POST /api/projects`                                   | 접근 가능한 프로젝트 목록 및 생성           |
 |                     | `GET, PATCH, DELETE /api/projects/:id`                      | 프로젝트 상세, 이름 변경, 삭제              |
 |                     | `GET, PUT /api/projects/:id/document`                       | 프로젝트 AST 문서 조회 및 저장              |
+|                     | `GET, POST /api/projects/:id/members`                       | 프로젝트 멤버 목록, 초대 및 역할 변경       |
+|                     | `DELETE /api/projects/:id/members/:userId`                  | 프로젝트 멤버 제거                          |
 | **동적 스키마**     | `POST /api/dynamic-schema/table`                            | 프로젝트 테이블 및 컬럼 생성                |
 |                     | `GET /api/dynamic-schema/tables/:projectId`                 | 프로젝트 테이블 목록 조회                   |
+|                     | `POST /api/dynamic-schema/column`                           | 기존 테이블에 컬럼 추가                     |
 | **동적 데이터**     | `GET, POST /api/dynamic-data/:projectId/:tableName`         | 동적 레코드 조회 및 추가                    |
 |                     | `PATCH, DELETE /api/dynamic-data/:projectId/:tableName/:id` | 레코드 수정 및 삭제                         |
+| **관계형 쿼리**     | `POST /api/projects/:projectId/query/execute`               | 조인·필터·정렬 기반 동적 조회               |
 | **워크플로우**      | `POST /api/workflow/execute`                                | 액션 체인 순차 실행                         |
 | **컴파일/내보내기** | `POST /api/generator/compile?target=react`                  | 단일 화면 코드 컴파일                       |
 |                     | `GET /api/export/:projectId/zip`                            | 프로젝트 전체 소스코드 zip 다운로드         |
