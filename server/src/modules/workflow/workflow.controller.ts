@@ -17,6 +17,7 @@ import { AuthGuard } from "../auth/auth.guard";
 import { ProjectService } from "../project/project.service";
 import { WorkflowPayload } from "./workflow.interface";
 import { WorkflowService } from "./workflow.service";
+import { EnvironmentService } from "../environment/environment.service";
 
 @ApiTags("Workflow Engine (액션 인터프리터)")
 @ApiBearerAuth()
@@ -26,6 +27,7 @@ export class WorkflowController {
   constructor(
     private readonly workflowService: WorkflowService,
     private readonly projectService: ProjectService,
+    private readonly environmentService: EnvironmentService,
   ) {}
 
   @Post("execute")
@@ -84,12 +86,19 @@ export class WorkflowController {
     }
     await this.projectService.ensureCanEdit(payload.projectId, req.user.id);
 
+    const envMap = payload.projectId
+      ? await this.environmentService.getResolvedEnvironmentMap(
+          payload.projectId,
+        )
+      : {};
+
     const context = {
       ...clientContext,
       user: {
         id: req.user.id,
         email: req.user.email,
       },
+      env: envMap,
     };
 
     return this.workflowService.executeWorkflow(payload, context);
