@@ -20,6 +20,8 @@ import {
 import { DynamicDataService } from "./dynamic-data.service";
 import { AuthGuard } from "../auth/auth.guard";
 import { ProjectService } from "../project/project.service";
+import { ProjectRoleGuard } from "../auth/guard/project-role.guard";
+import { RequireProjectRoles } from "../auth/decorators/roles.decorator";
 
 @ApiTags("Dynamic Data (동적 CRUD)")
 @ApiBearerAuth()
@@ -46,6 +48,8 @@ export class DynamicDataController {
   }
 
   @Get(":projectId/:tableName")
+  @UseGuards(ProjectRoleGuard)
+  @RequireProjectRoles("VIEWER", "EDITOR", "OWNER")
   @ApiOperation({ summary: "데이터 목록 조회 (SELECT Pagination)" })
   @ApiQuery({ name: "page", required: false, example: 1 })
   @ApiQuery({ name: "limit", required: false, example: 20 })
@@ -79,6 +83,8 @@ export class DynamicDataController {
   }
 
   @Patch(":projectId/:tableName/:id")
+  @UseGuards(ProjectRoleGuard)
+  @RequireProjectRoles("EDITOR", "OWNER")
   @ApiOperation({ summary: "데이터 수정 (UPDATE)" })
   async update(
     @Param("projectId") projectId: string,

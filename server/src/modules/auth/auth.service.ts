@@ -10,39 +10,22 @@ import {
   randomBytes,
   scrypt,
   timingSafeEqual,
-} from "crypto";
-import { promisify } from "util";
+} from "node:crypto";
+import { promisify } from "node:util";
 import { DatabaseService } from "../database/database.service";
-
-export interface AuthCredentialsDto {
-  email: string;
-  password: string;
-}
-
-export interface AuthUser {
-  id: string;
-  email: string;
-  role: string;
-}
-
-interface JwtPayload {
-  sub: string;
-  email: string;
-  role: string;
-  exp: number;
-}
+import type {
+  AuthCredentialsDto,
+  AuthUser,
+  JwtPayload,
+  ProjectRole,
+  RefreshTokenRow,
+  SystemRole,
+} from "./interfaces/auth.interface";
 
 const scryptAsync = promisify(scrypt);
 const ACCESS_TOKEN_TTL_SECONDS = 60 * 15;
 export const REFRESH_TOKEN_TTL_MS = 1000 * 60 * 60 * 24 * 30;
 export const REFRESH_TOKEN_COOKIE = "bakeapp_refresh_token";
-
-interface RefreshTokenRow {
-  id: string;
-  userId: string;
-  email: string;
-  role: string;
-}
 
 @Injectable()
 export class AuthService implements OnModuleInit {
@@ -89,7 +72,9 @@ export class AuthService implements OnModuleInit {
     const user = result.rows[0];
 
     if (!user || !(await this.verifyPassword(password, user.passwordHash))) {
-      throw new UnauthorizedException("이메일 또는 비밀번호가 올바르지 않습니다.");
+      throw new UnauthorizedException(
+        "이메일 또는 비밀번호가 올바르지 않습니다.",
+      );
     }
 
     return this.createSession(user);
@@ -108,7 +93,9 @@ export class AuthService implements OnModuleInit {
     );
     const session = result.rows[0];
     if (!session) {
-      throw new UnauthorizedException("유효하지 않거나 만료된 refresh token입니다.");
+      throw new UnauthorizedException(
+        "유효하지 않거나 만료된 refresh token입니다.",
+      );
     }
 
     return this.databaseService.runInTransaction(async (client) => {
@@ -123,7 +110,11 @@ export class AuthService implements OnModuleInit {
       }
 
       return this.createSession(
-        { id: session.userId, email: session.email, role: session.role },
+        {
+          id: session.userId,
+          email: session.email,
+          role: session.role as SystemRole,
+        },
         client,
       );
     });
@@ -159,7 +150,11 @@ export class AuthService implements OnModuleInit {
       const payload = JSON.parse(
         Buffer.from(encodedPayload, "base64url").toString("utf8"),
       ) as JwtPayload;
-      if (!payload.sub || !payload.email || payload.exp <= Math.floor(Date.now() / 1000)) {
+      if (
+        !payload.sub ||
+        !payload.email ||
+        payload.exp <= Math.floor(Date.now() / 1000)
+      ) {
         throw new Error("Invalid token payload");
       }
 
@@ -173,6 +168,40 @@ export class AuthService implements OnModuleInit {
     } catch {
       throw new UnauthorizedException("유효하지 않거나 만료된 토큰입니다.");
     }
+  }
+
+  async getProjectRole(
+    userId: string,
+    projectId: string,
+  ): Promise<ProjectRole | null> {
+    const result = await this.databaseService.query<{ role: ProjectRole }>(
+      `SELECT role FROM project_members WHERE user_id = $1 AND project_id = $2`,
+      [userId, projectId],
+    );
+
+    return result.rows[0]?.role || null;
+  }
+
+  async validateProjectAccess(
+    userId: string,
+    projectId: string,
+    requiredRoles: ProjectRole[],
+  ): Promise<boolean> {
+    const userRole = await this.getProjectRole(userId, projectId);
+    if (!userRole) return false;
+
+    const roleHierarchy: Record<ProjectRole, number> = {
+      OWNER: 3,
+      EDITOR: 2,
+      VIEWER: 1,
+    };
+
+    const userLevel = roleHierarchy[userRole];
+    const minRequiredLevel = Math.min(
+      ...requiredRoles.map((r) => roleHierarchy[r]),
+    );
+
+    return userLevel >= minRequiredLevel;
   }
 
   private validateCredentials(dto: AuthCredentialsDto) {
@@ -205,9 +234,9 @@ export class AuthService implements OnModuleInit {
   }
 
   private issueAccessToken(user: AuthUser) {
-    const header = Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
-      "base64url",
-    );
+    const header = Buffer.from(
+      JSON.stringify({ alg: "HS256", typ: "JWT" }),
+    ).toString("base64url");
     const payload = Buffer.from(
       JSON.stringify({
         sub: user.id,
