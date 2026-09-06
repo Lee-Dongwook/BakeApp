@@ -6,16 +6,16 @@
 
 ## Columns
 
-| Name       | Type                     | Default           | Nullable | Children                                        | Parents                               | Comment |
-| ---------- | ------------------------ | ----------------- | -------- | ----------------------------------------------- | ------------------------------------- | ------- |
-| created_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |                                                 |                                       |         |
-| edges      | jsonb                    | '[]'::jsonb       | false    |                                                 |                                       |         |
-| id         | uuid                     | gen_random_uuid() | false    | [public.workflow_logs](public.workflow_logs.md) |                                       |         |
-| is_active  | boolean                  | true              | false    |                                                 |                                       |         |
-| name       | varchar(100)             |                   | false    |                                                 |                                       |         |
-| nodes      | jsonb                    | '[]'::jsonb       | false    |                                                 |                                       |         |
-| project_id | uuid                     |                   | false    |                                                 | [public.projects](public.projects.md) |         |
-| updated_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |                                                 |                                       |         |
+| Name       | Type                     | Default           | Nullable | Children                                                                                        | Parents                               | Comment |
+| ---------- | ------------------------ | ----------------- | -------- | ----------------------------------------------------------------------------------------------- | ------------------------------------- | ------- |
+| created_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |                                                                                                 |                                       |         |
+| edges      | jsonb                    | '[]'::jsonb       | false    |                                                                                                 |                                       |         |
+| id         | uuid                     | gen_random_uuid() | false    | [public.workflow_logs](public.workflow_logs.md) [public.workflow_runs](public.workflow_runs.md) |                                       |         |
+| is_active  | boolean                  | true              | false    |                                                                                                 |                                       |         |
+| name       | varchar(100)             |                   | false    |                                                                                                 |                                       |         |
+| nodes      | jsonb                    | '[]'::jsonb       | false    |                                                                                                 |                                       |         |
+| project_id | uuid                     |                   | false    |                                                                                                 | [public.projects](public.projects.md) |         |
+| updated_at | timestamp with time zone | CURRENT_TIMESTAMP | false    |                                                                                                 |                                       |         |
 
 ## Constraints
 

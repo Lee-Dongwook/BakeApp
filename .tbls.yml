@@ -44,3 +44,7 @@ comments:
     tableComment: 프로젝트별 활성 워크플로우 노드 및 엣지 정의
   - table: workflow_logs
     tableComment: 워크플로우 실행 성공·실패 이력과 노드 실행 결과
+  - table: workflow_runs
+    tableComment: 워크플로우 실행 단위의 상태·입출력·오류 이력
+  - table: workflow_step_runs
+    tableComment: 워크플로우 실행 단계별 상태·재시도·처리 시간 이력

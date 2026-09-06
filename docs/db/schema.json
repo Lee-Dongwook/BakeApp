@@ -1490,6 +1490,342 @@
       ]
     },
     {
+      "name": "public.workflow_runs",
+      "type": "BASE TABLE",
+      "comment": "워크플로우 실행 단위의 상태·입출력·오류 이력",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "created_by",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "input",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "output",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": "'PENDING'::text"
+        },
+        {
+          "name": "trigger_context",
+          "type": "jsonb",
+          "nullable": false,
+          "default": "'{}'::jsonb"
+        },
+        {
+          "name": "trigger_type",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "workflow_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "workflow_runs_pkey",
+          "def": "CREATE UNIQUE INDEX workflow_runs_pkey ON public.workflow_runs USING btree (id)",
+          "table": "public.workflow_runs",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_runs_project_created_at_idx",
+          "def": "CREATE INDEX workflow_runs_project_created_at_idx ON public.workflow_runs USING btree (project_id, created_at DESC)",
+          "table": "public.workflow_runs",
+          "columns": [
+            "project_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "workflow_runs_project_status_created_at_idx",
+          "def": "CREATE INDEX workflow_runs_project_status_created_at_idx ON public.workflow_runs USING btree (project_id, status, created_at DESC)",
+          "table": "public.workflow_runs",
+          "columns": [
+            "project_id",
+            "status",
+            "created_at"
+          ]
+        },
+        {
+          "name": "workflow_runs_workflow_created_at_idx",
+          "def": "CREATE INDEX workflow_runs_workflow_created_at_idx ON public.workflow_runs USING btree (workflow_id, created_at DESC)",
+          "table": "public.workflow_runs",
+          "columns": [
+            "workflow_id",
+            "created_at"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "workflow_runs_created_by_fk",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL",
+          "table": "public.workflow_runs",
+          "referenced_table": "public.users",
+          "columns": [
+            "created_by"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_runs_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.workflow_runs",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_runs_project_fk",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.workflow_runs",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_runs_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['PENDING'::text, 'RUNNING'::text, 'WAITING'::text, 'SUCCEEDED'::text, 'FAILED'::text, 'CANCELLED'::text, 'TIMED_OUT'::text])))",
+          "table": "public.workflow_runs",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        },
+        {
+          "name": "workflow_runs_workflow_fk",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE",
+          "table": "public.workflow_runs",
+          "referenced_table": "public.workflows",
+          "columns": [
+            "workflow_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.workflow_step_runs",
+      "type": "BASE TABLE",
+      "comment": "워크플로우 실행 단계별 상태·재시도·처리 시간 이력",
+      "columns": [
+        {
+          "name": "attempt",
+          "type": "integer",
+          "nullable": false,
+          "default": "1"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "duration_ms",
+          "type": "integer",
+          "nullable": true
+        },
+        {
+          "name": "error",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "finished_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "input",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "node_id",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "node_type",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "output",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
+          "name": "started_at",
+          "type": "timestamp with time zone",
+          "nullable": true
+        },
+        {
+          "name": "status",
+          "type": "text",
+          "nullable": false,
+          "default": "'PENDING'::text"
+        },
+        {
+          "name": "workflow_run_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "workflow_step_runs_pkey",
+          "def": "CREATE UNIQUE INDEX workflow_step_runs_pkey ON public.workflow_step_runs USING btree (id)",
+          "table": "public.workflow_step_runs",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_run_created_at_idx",
+          "def": "CREATE INDEX workflow_step_runs_run_created_at_idx ON public.workflow_step_runs USING btree (workflow_run_id, created_at)",
+          "table": "public.workflow_step_runs",
+          "columns": [
+            "workflow_run_id",
+            "created_at"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_run_node_attempt_idx",
+          "def": "CREATE INDEX workflow_step_runs_run_node_attempt_idx ON public.workflow_step_runs USING btree (workflow_run_id, node_id, attempt)",
+          "table": "public.workflow_step_runs",
+          "columns": [
+            "workflow_run_id",
+            "node_id",
+            "attempt"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "workflow_step_runs_attempt_check",
+          "type": "CHECK",
+          "def": "CHECK ((attempt \u003e= 1))",
+          "table": "public.workflow_step_runs",
+          "referenced_table": "",
+          "columns": [
+            "attempt"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_duration_ms_check",
+          "type": "CHECK",
+          "def": "CHECK (((duration_ms IS NULL) OR (duration_ms \u003e= 0)))",
+          "table": "public.workflow_step_runs",
+          "referenced_table": "",
+          "columns": [
+            "duration_ms"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.workflow_step_runs",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_run_fk",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (workflow_run_id) REFERENCES workflow_runs(id) ON DELETE CASCADE",
+          "table": "public.workflow_step_runs",
+          "referenced_table": "public.workflow_runs",
+          "columns": [
+            "workflow_run_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "workflow_step_runs_status_check",
+          "type": "CHECK",
+          "def": "CHECK ((status = ANY (ARRAY['PENDING'::text, 'RUNNING'::text, 'SUCCEEDED'::text, 'FAILED'::text, 'SKIPPED'::text, 'RETRYING'::text])))",
+          "table": "public.workflow_step_runs",
+          "referenced_table": "",
+          "columns": [
+            "status"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.workflows",
       "type": "BASE TABLE",
       "comment": "프로젝트별 활성 워크플로우 노드 및 엣지 정의",
@@ -1874,6 +2210,58 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.workflow_runs",
+      "columns": [
+        "created_by"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE SET NULL"
+    },
+    {
+      "table": "public.workflow_runs",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.workflow_runs",
+      "columns": [
+        "workflow_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.workflows",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (workflow_id) REFERENCES workflows(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.workflow_step_runs",
+      "columns": [
+        "workflow_run_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.workflow_runs",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (workflow_run_id) REFERENCES workflow_runs(id) ON DELETE CASCADE"
     },
     {
       "table": "public.workflows",
