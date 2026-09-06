@@ -50,6 +50,7 @@ export interface ActionNode {
 
 export interface WorkflowPayload {
   projectId: string;
+  workflowId?: string;
   trigger: "ON_CLICK" | "ON_PAGE_LOAD" | "ON_SUBMIT";
   actions: ActionNode[];
   startActionId?: string;

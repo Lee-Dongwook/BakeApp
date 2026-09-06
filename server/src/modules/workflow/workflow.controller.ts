@@ -1,5 +1,4 @@
 import {
-  BadRequestException,
   Body,
   Controller,
   Get,
@@ -52,11 +51,24 @@ export class WorkflowController {
   async execute(
     @Param("projectId") projectId: string,
     @Param("workflowId") workflowId: string,
-    @Body() initialInput: any,
+    @Body() body: any,
     @Req() req: any,
   ) {
     await this.projectService.ensureCanView(projectId, req.user.id);
-    return this.workflowEngineService.executeWorkflow(workflowId, initialInput);
+
+    const triggerType = body?.triggerType || "MANUAL";
+    const triggerContext = body?.context || body || {};
+    const initiatorType = "BUILDER_USER";
+    const initiatorId = req.user.id;
+
+    return this.workflowEngineService.executeWorkflow(
+      projectId,
+      workflowId,
+      triggerType,
+      triggerContext,
+      initiatorType,
+      initiatorId,
+    );
   }
 
   @Get(":workflowId/runs")
@@ -77,6 +89,7 @@ export class WorkflowController {
     @Param("runId") runId: string,
     @Req() req: any,
   ) {
-    return this.workflowEngineService.getWorkflowRunDetail(runId);
+    await this.projectService.ensureCanView(projectId, req.user.id);
+    return await this.workflowEngineService.getWorkflowRunDetail(runId);
   }
 }

@@ -5,104 +5,93 @@ import {
 } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { WorkflowService } from "./workflow.service";
-import { ActionNode } from "./workflow.interface";
-
-interface WorkflowNode {
-  id: string;
-  type: "ACTION" | "CONDITION" | "LOOP" | "RETRY";
-  config: {
-    actionType?: string; // e.g., "QUERY", "HTTP"
-    expression?: string; // CONDITION용 조건식 (예: "data.age > 18")
-    loopItemsPath?: string; // LOOP용 순회할 데이터 경로
-    maxRetries?: number; // RETRY용 최대 재시도 횟수
-    retryDelayMs?: number; // 재시도 대기 시간
-    [key: string]: any;
-  };
-}
+import { WorkflowPersistenceService } from "./workflow-persistence.service";
+import { WorkflowPayload } from "./workflow.interface";
 
 @Injectable()
 export class WorkflowEngineService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly workflowService: WorkflowService,
+    private readonly persistence: WorkflowPersistenceService,
   ) {}
 
-  async executeWorkflow(workflowId: string, initialInput: any) {
-    const wfRes = await this.databaseService.query<{
-      id: string;
-      project_id: string;
-      name: string;
-      nodes: ActionNode[];
-      is_active: boolean;
-    }>(
-      `SELECT id, project_id, name, nodes, is_active FROM workflows WHERE id = $1`,
-      [workflowId],
-    );
+  async executeWorkflow(
+    projectId: string,
+    workflowId: string,
+    triggerType: string,
+    triggerContext: Record<string, any>,
+    initiatorType: string,
+    initiatorId: string | null,
+  ) {
+    const workflowQuery = `SELECT * FROM workflows WHERE id = $1 AND project_id = $2;`;
+    const workflowRes = await this.databaseService.query(workflowQuery, [
+      workflowId,
+      projectId,
+    ]);
 
-    if (wfRes.rows.length === 0) {
-      throw new NotFoundException("지정한 워크플로우를 찾을 수 없습니다.");
+    if (workflowRes.rows.length === 0) {
+      throw new NotFoundException("해당 워크플로우 정의를 찾을 수 없습니다.");
     }
 
-    const workflow = wfRes.rows[0];
-    if (!workflow.is_active) {
-      throw new BadRequestException("비활성화된 워크플로우입니다.");
-    }
-
-    const logRes = await this.databaseService.query<{ id: string }>(
-      `INSERT INTO workflow_logs (workflow_id, status, execution_detail) VALUES ($1, $2, $3::jsonb) RETURNING id`,
-      [workflowId, "RUNNING", JSON.stringify({ steps: {}, logs: [] })],
-    );
-    const runId = logRes.rows[0].id;
+    const workflow = workflowRes.rows[0];
+    const payload: WorkflowPayload = {
+      projectId,
+      workflowId,
+      trigger: triggerType as any,
+      actions: workflow.nodes || workflow.actions || [],
+      startActionId: workflow.start_action_id,
+    };
 
     try {
-      const executionResult = await this.workflowService.executeWorkflowChain(
-        workflow.project_id,
-        workflow.nodes,
-        initialInput,
+      const executionResult = await this.workflowService.executeWorkflow(
+        payload,
+        triggerContext,
       );
-
-      await this.databaseService.query(
-        `UPDATE workflow_logs SET status = $1, execution_detail = $2::jsonb WHERE id = $3`,
-        ["SUCCESS", JSON.stringify(executionResult), runId],
-      );
-
-      return { success: true, runId, ...executionResult };
+      return executionResult;
     } catch (error: any) {
-      const failDetail = {
-        message: error.message,
-        response: error.getResponse ? error.getResponse() : null,
-      };
-
-      await this.databaseService.query(
-        `UPDATE workflow_logs SET status = $1, execution_detail = $2::jsonb WHERE id = $3`,
-        ["FAILED", JSON.stringify(failDetail), runId],
-      );
-
       throw new BadRequestException({
-        message: `워크플로우 실행 실패 (Run ID: ${runId})`,
+        message: "워크플로우 실행 중 에러가 발생했습니다.",
         error: error.message,
+        response: error.getResponse ? error.getResponse() : null,
       });
     }
   }
 
   async getWorkflowRuns(workflowId: string) {
     const res = await this.databaseService.query(
-      `SELECT id, status, created_at FROM workflow_logs WHERE workflow_id = $1 ORDER BY created_at DESC LIMIT 50`,
+      `SELECT id, project_id, workflow_id, status, trigger_type, started_at, finished_at, created_at
+       FROM workflow_runs
+       WHERE workflow_id = $1
+       ORDER BY created_at DESC
+       LIMIT 50`,
       [workflowId],
     );
     return res.rows;
   }
 
   async getWorkflowRunDetail(runId: string) {
-    const res = await this.databaseService.query(
-      `SELECT id, workflow_id, status, execution_detail, created_at FROM workflow_logs WHERE id = $1`,
-      [runId],
-    );
-    if (res.rows.length === 0) {
+    const runQuery = `SELECT * FROM workflow_runs WHERE id = $1;`;
+
+    const runRes = await this.databaseService.query(runQuery, [runId]);
+
+    if (runRes.rows.length === 0) {
       throw new NotFoundException(
-        "해당 워크플로우 실행 로그를 찾을 수 없습니다.",
+        "해당 워크플로우 실행 이력을 찾을 수 없습니다.",
       );
     }
-    return res.rows[0];
+
+    const run = runRes.rows[0];
+    const stepsQuery = `
+      SELECT * FROM workflow_step_runs 
+      WHERE workflow_run_id = $1 
+      ORDER BY created_at ASC, attempt ASC;
+    `;
+    const stepsRes = await this.databaseService.query(stepsQuery, [runId]);
+
+    return {
+      ...run,
+      steps: stepsRes.rows,
+    };
   }
 }

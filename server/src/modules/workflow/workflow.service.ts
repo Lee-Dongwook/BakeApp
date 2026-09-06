@@ -3,6 +3,7 @@ import { SqlExecutor } from "../../common/tenant-table";
 import { DatabaseService } from "../database/database.service";
 import { DynamicDataService } from "../dynamic-data/dynamic-data.service";
 import { ValueResolverService } from "./value-resolver.service";
+import { WorkflowPersistenceService } from "./workflow-persistence.service";
 import { ActionNode, WorkflowPayload } from "./workflow.interface";
 
 @Injectable()
@@ -11,6 +12,7 @@ export class WorkflowService {
     private readonly dataService: DynamicDataService,
     private readonly databaseService: DatabaseService,
     private readonly valueResolver: ValueResolverService,
+    private readonly persistence: WorkflowPersistenceService,
   ) {}
 
   private async executeSingleAction(
@@ -216,9 +218,10 @@ export class WorkflowService {
     return path.split(".").reduce((acc, part) => acc?.[part], obj);
   }
 
-  private async executeWithRetry(
+  private async executeActionWithAttemptLogging(
     projectId: string,
     action: ActionNode,
+    runId: string,
     client?: SqlExecutor,
     runtimeContext?: Record<string, any>,
   ) {
@@ -227,18 +230,44 @@ export class WorkflowService {
     let attempt = 0;
 
     while (true) {
+      attempt++;
+      const startTime = Date.now();
+      const stepRunId = await this.persistence.createStepRun(
+        runId,
+        action.id,
+        action.type,
+        attempt,
+        action.params,
+        client,
+      );
+
       try {
-        return await this.executeSingleAction(
+        const result = await this.executeSingleAction(
           projectId,
           action,
           client,
           runtimeContext,
         );
+        const durationMs = Date.now() - startTime;
+        await this.persistence.markStepSucceeded(
+          stepRunId,
+          result,
+          durationMs,
+          client,
+        );
       } catch (error) {
-        attempt++;
+        const durationMs = Date.now() - startTime;
+        await this.persistence.markStepFailed(
+          stepRunId,
+          error,
+          durationMs,
+          client,
+        );
+
         if (attempt > maxRetries) {
           throw error;
         }
+
         await new Promise((resolve) =>
           setTimeout(resolve, retryDelayMs * attempt),
         );
@@ -248,10 +277,14 @@ export class WorkflowService {
 
   async executeWorkflowChain(
     projectId: string,
+    workflowId: string,
     actions: ActionNode[],
     clientContext: Record<string, any> = {},
     client?: SqlExecutor,
     startActionId?: string,
+    triggerType: string = "MANUAL",
+    initiatorType: string = "BUILDER_USER",
+    initiatorId: string | null = null,
   ) {
     if (!actions || actions.length === 0) {
       return {
@@ -259,6 +292,24 @@ export class WorkflowService {
         executionLog: ["실행할 액션이 없습니다."],
         results: {},
       };
+    }
+
+    const definitionSnapshot = structuredClone(actions);
+
+    const runId = await this.persistence.createRun(
+      projectId,
+      workflowId,
+      triggerType,
+      clientContext,
+      initiatorType,
+      initiatorId,
+      definitionSnapshot,
+      client,
+    );
+
+    const started = await this.persistence.markRunning(runId, client);
+    if (!started) {
+      throw new Error("이미 실행 중이거나 종료된 워크플로우 런입니다.");
     }
 
     const executionLog: string[] = [];
@@ -273,30 +324,42 @@ export class WorkflowService {
     let currentAction: ActionNode | undefined =
       actions.find((a) => a.id === startActionId) || actions[0];
 
-    while (currentAction) {
-      executionCount++;
-      if (executionCount > MAX_EXECUTIONS) {
-        throw new BadRequestException({
-          message: "워크플로우 최대 실행 횟수(100회)를 초과하였습니다.",
-          log: executionLog,
-        });
-      }
+    try {
+      while (currentAction) {
+        executionCount++;
+        if (executionCount > MAX_EXECUTIONS) {
+          throw new BadRequestException({
+            message: "워크플로우 최대 실행 횟수(100회)를 초과하였습니다.",
+            log: executionLog,
+          });
+        }
 
-      executionLog.push(
-        `[Execution] Action Node ID: ${currentAction.id} (${currentAction.type})`,
-      );
+        executionLog.push(
+          `[Execution] Action Node ID: ${currentAction.id} (${currentAction.type})`,
+        );
 
-      try {
         const resolvedParams = this.valueResolver.resolve(
           currentAction.params,
           runtimeContext,
         );
-        const result = await this.executeWithRetry(
-          projectId,
-          { ...currentAction, params: resolvedParams },
-          client,
-          runtimeContext,
-        );
+        let result: any;
+        try {
+          result = await this.executeActionWithAttemptLogging(
+            projectId,
+            { ...currentAction, params: resolvedParams },
+            runId,
+            client,
+            runtimeContext,
+          );
+        } catch (error) {
+          if (currentAction.errorNextActionId) {
+            currentAction = actions.find(
+              (a) => a.id === currentAction.errorNextActionId,
+            );
+            continue;
+          }
+          throw error;
+        }
 
         executionResults[currentAction.id] = result;
         runtimeContext.steps[currentAction.id] = result;
@@ -314,26 +377,21 @@ export class WorkflowService {
         } else {
           currentAction = undefined;
         }
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        executionLog.push(
-          `[Error] Action Node ID: ${currentAction.id} 실패 - ${errorMessage}`,
-        );
-
-        if (currentAction.errorNextActionId) {
-          currentAction = actions.find(
-            (a) => a.id === currentAction.errorNextActionId,
-          );
-          continue;
-        }
-        throw new BadRequestException({
-          message: `워크플로우 실행 중 에러가 발생했습니다: ${errorMessage}`,
-          log: executionLog,
-        });
       }
+
+      await this.persistence.markSucceeded(runId, executionResults, client);
+
+      return { success: true, runId, executionLog, results: executionResults };
+    } catch (error) {
+      await this.persistence.markFailed(runId, error, client);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
+      throw new BadRequestException({
+        message: `워크플로우 실행 중 에러가 발생했습니다: ${errorMessage}`,
+        runId,
+        log: executionLog,
+      });
     }
-    return { success: true, executionLog, results: executionResults };
   }
 
   /**
@@ -410,16 +468,23 @@ export class WorkflowService {
     payload: WorkflowPayload,
     clientContext: Record<string, any> = {},
   ) {
-    const { projectId, trigger, actions, startActionId } = payload;
+    const {
+      projectId,
+      workflowId = "default-workflow",
+      trigger,
+      actions,
+      startActionId,
+    } = payload;
     return await this.databaseService.runInTransaction(async (client) => {
-      const res = await this.executeWorkflowChain(
+      return await this.executeWorkflowChain(
         projectId,
+        workflowId,
         actions,
         clientContext,
         client,
         startActionId,
+        trigger || "MANUAL",
       );
-      return { trigger, ...res };
     });
   }
 }
