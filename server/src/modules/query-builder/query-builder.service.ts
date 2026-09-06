@@ -5,6 +5,7 @@ import {
   buildTenantTableName,
   sanitizeIdentifier,
 } from "../../common/tenant-table";
+import { RuntimeException } from "../runtime/runtime.exception";
 
 @Injectable()
 export class QueryBuilderService {
@@ -131,6 +132,73 @@ export class QueryBuilderService {
         `동적 쿼리 실행 실패: ${error instanceof Error ? error.message : error}`,
       );
     }
+  }
+
+  async executeStoredQuery(
+    projectId: string,
+    queryDef: any,
+    parameters: Record<string, any> = {},
+    currentUser?: any,
+  ) {
+    const { type, sql, queryPayload, datasourceId } = queryDef;
+
+    // Case A: Query Builder 기반 패러미터형 쿼리 (Internal Table)
+    if (type === "BUILDER" || queryPayload) {
+      const mergedPayload = {
+        ...queryPayload,
+        filters: this.bindParametersToFilters(
+          queryPayload?.filters,
+          parameters,
+        ),
+      };
+      return await this.executeQuery(projectId, mergedPayload);
+    }
+
+    if (sql) {
+      if (datasourceId) {
+        // TODO: 외부 PostgreSQL Datasource Service 연동 시 호출
+        // return await this.externalDatasourceService.query(datasourceId, sql, parameters);
+      }
+
+      // 파라미터 바인딩 ($1, $2 또는 :param 지원)
+      const { parameterizedSql, queryParams } = this.parseSqlParameters(
+        sql,
+        parameters,
+      );
+      const res = await this.databaseService.query(
+        parameterizedSql,
+        queryParams,
+      );
+      return res.rows;
+    }
+
+    throw new RuntimeException(
+      "RUNTIME_QUERY_NOT_FOUND",
+      "유효한 쿼리 실행 정의(sql 또는 queryPayload)가 올바르지 않습니다.",
+    );
+  }
+
+  private parseSqlParameters(sql: string, params: Record<string, any>) {
+    const queryParams: any[] = [];
+    let paramIndex = 1;
+
+    const parameterizedSql = sql.replace(/:([a-zA-Z0-9_]+)/g, (_, key) => {
+      queryParams.push(params[key] !== undefined ? params[key] : null);
+      return `$${paramIndex++}`;
+    });
+
+    return { parameterizedSql, queryParams };
+  }
+
+  private bindParametersToFilters(filters: any[], params: Record<string, any>) {
+    if (!Array.isArray(filters)) return filters;
+    return filters.map((f) => ({
+      ...f,
+      value:
+        typeof f.value === "string" && f.value.startsWith(":")
+          ? (params[f.value.slice(1)] ?? f.value)
+          : f.value,
+    }));
   }
 
   private buildWhereClause(
