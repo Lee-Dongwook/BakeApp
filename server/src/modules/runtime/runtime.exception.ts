@@ -8,7 +8,9 @@ export type RuntimeErrorCode =
   | "RUNTIME_PAGE_NOT_FOUND"
   | "RUNTIME_QUERY_NOT_FOUND"
   | "RUNTIME_WORKFLOW_NOT_FOUND"
-  | "RUNTIME_RESOURCE_NOT_IN_RELEASE";
+  | "RUNTIME_RESOURCE_NOT_IN_RELEASE"
+  | "SCHEMA_ALTER_ERROR"
+  | "SCHEMA_MIGRATION_FAILED";
 
 export class RuntimeException extends HttpException {
   constructor(

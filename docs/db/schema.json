@@ -717,6 +717,113 @@
       ]
     },
     {
+      "name": "public.project_schema_migrations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "applied_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "ddl_statements",
+          "type": "text[]",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "migration_name",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "rollback_statements",
+          "type": "text[]",
+          "nullable": true
+        },
+        {
+          "name": "version",
+          "type": "integer",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_project_schema_migrations_project",
+          "def": "CREATE INDEX idx_project_schema_migrations_project ON public.project_schema_migrations USING btree (project_id, version DESC)",
+          "table": "public.project_schema_migrations",
+          "columns": [
+            "project_id",
+            "version"
+          ]
+        },
+        {
+          "name": "project_schema_migrations_pkey",
+          "def": "CREATE UNIQUE INDEX project_schema_migrations_pkey ON public.project_schema_migrations USING btree (id)",
+          "table": "public.project_schema_migrations",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_schema_migrations_project_id_version_key",
+          "def": "CREATE UNIQUE INDEX project_schema_migrations_project_id_version_key ON public.project_schema_migrations USING btree (project_id, version)",
+          "table": "public.project_schema_migrations",
+          "columns": [
+            "project_id",
+            "version"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_schema_migrations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.project_schema_migrations",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_schema_migrations_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_schema_migrations",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_schema_migrations_project_id_version_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, version)",
+          "table": "public.project_schema_migrations",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "version"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.project_schemas",
       "type": "BASE TABLE",
       "comment": "프로젝트별 동적 데이터 스키마 정의",
@@ -2761,6 +2868,19 @@
         "project_id"
       ],
       "cardinality": "zero_or_one",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_schema_migrations",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
       "parent_table": "public.projects",
       "parent_columns": [
         "id"

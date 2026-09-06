@@ -15,6 +15,7 @@ BakeApp Studio의 인증·프로젝트·동적 데이터 스키마
 | [public.project_environments](public.project_environments.md)             | 7       | 프로젝트별 환경 변수와 암호화된 Secret 값                                     | BASE TABLE |
 | [public.project_members](public.project_members.md)                       | 4       | 프로젝트별 협업 권한                                                    | BASE TABLE |
 | [public.project_runtime_settings](public.project_runtime_settings.md)     | 8       | 배포된 프로젝트를 런타임 앱으로 노출하기 위한 슬러그·공개 설정                            | BASE TABLE |
+| [public.project_schema_migrations](public.project_schema_migrations.md)   | 7       |                                                                | BASE TABLE |
 | [public.project_schemas](public.project_schemas.md)                       | 6       | 프로젝트별 동적 데이터 스키마 정의                                            | BASE TABLE |
 | [public.project_versions](public.project_versions.md)                     | 8       | 프로젝트별 릴리즈 버전 스냅샷                                               | BASE TABLE |
 | [public.projects](public.projects.md)                                     | 5       | 사용자가 소유하는 앱 빌더 프로젝트                                            | BASE TABLE |

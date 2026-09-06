@@ -38,6 +38,10 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
     return this.pool.query(text, params);
   }
 
+  getPool(): Pool {
+    return this.pool;
+  }
+
   async runInTransaction<T>(
     operation: (client: PoolClient) => Promise<T>,
   ): Promise<T> {
