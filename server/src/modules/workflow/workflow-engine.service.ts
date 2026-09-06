@@ -1,5 +1,11 @@
-import { Injectable, BadRequestException } from "@nestjs/common";
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+} from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
+import { WorkflowService } from "./workflow.service";
+import { ActionNode } from "./workflow.interface";
 
 interface WorkflowNode {
   id: string;
@@ -16,122 +22,87 @@ interface WorkflowNode {
 
 @Injectable()
 export class WorkflowEngineService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly workflowService: WorkflowService,
+  ) {}
 
   async executeWorkflow(workflowId: string, initialInput: any) {
     const wfRes = await this.databaseService.query<{
-      nodes: WorkflowNode[];
-      edges: any[];
+      id: string;
+      project_id: string;
+      name: string;
+      nodes: ActionNode[];
+      is_active: boolean;
     }>(
-      `SELECT nodes, edges FROM workflows WHERE id = $1 AND is_active = true`,
+      `SELECT id, project_id, name, nodes, is_active FROM workflows WHERE id = $1`,
       [workflowId],
     );
 
     if (wfRes.rows.length === 0) {
-      throw new BadRequestException("활성화된 워크플로우를 찾을 수 없습니다.");
+      throw new NotFoundException("지정한 워크플로우를 찾을 수 없습니다.");
     }
 
-    const { nodes } = wfRes.rows[0];
-    const executionLogs: any[] = [];
-    let currentContext = { ...initialInput };
-
-    try {
-      for (const node of nodes) {
-        const result = await this.executeNodeWithPolicies(node, currentContext);
-        executionLogs.push({
-          nodeId: node.id,
-          type: node.type,
-          status: "SUCCESS",
-          result,
-        });
-        currentContext = { ...currentContext, ...result };
-      }
-
-      await this.saveLog(workflowId, "SUCCESS", executionLogs);
-      return { success: true, context: currentContext, logs: executionLogs };
-    } catch (error: any) {
-      executionLogs.push({ status: "FAILED", error: error.message });
-      await this.saveLog(workflowId, "FAILED", executionLogs);
-      throw new BadRequestException(`워크플로우 실행 중단: ${error.message}`);
-    }
-  }
-
-  private async executeNodeWithPolicies(
-    node: WorkflowNode,
-    context: any,
-  ): Promise<any> {
-    let attempt = 0;
-    const maxRetries = node.config.maxRetries || 0;
-    const retryDelayMs = node.config.retryDelayMs || 1000;
-
-    while (attempt <= maxRetries) {
-      try {
-        switch (node.type) {
-          case "CONDITION":
-            return this.evaluateCondition(node.config.expression, context);
-
-          case "LOOP":
-            return await this.evaluateLoop(node, context);
-
-          case "ACTION":
-            return await this.executeAction(node.config, context);
-
-          default:
-            return context;
-        }
-      } catch (error) {
-        attempt++;
-        if (attempt > maxRetries) {
-          throw error;
-        }
-        await new Promise((resolve) =>
-          setTimeout(resolve, retryDelayMs * attempt),
-        );
-      }
-    }
-  }
-
-  private evaluateCondition(
-    expression: string,
-    context: any,
-  ): { branch: string; conditionMet: boolean } {
-    try {
-      const evaluateFn = new Function(
-        "context",
-        `with(context) { return !!(${expression}); }`,
-      );
-      const conditionMet = evaluateFn(context);
-      return { branch: conditionMet ? "true" : "false", conditionMet };
-    } catch (error: any) {
-      throw new BadRequestException(
-        `조건식 평가 실패 (${expression}): ${error.message}`,
-      );
-    }
-  }
-
-  private async evaluateLoop(node: WorkflowNode, context: any): Promise<any> {
-    const items = context[node.config.loopItemsPath] || [];
-    if (!Array.isArray(items)) {
-      throw new BadRequestException("반복할 배열 데이터를 찾을 수 없습니다.");
+    const workflow = wfRes.rows[0];
+    if (!workflow.is_active) {
+      throw new BadRequestException("비활성화된 워크플로우입니다.");
     }
 
-    const loopResults = [];
-    for (const item of items) {
-      const loopContext = { ...context, currentItem: item };
-      // 루프 내부 액션 수행 로직 확장 가능
-      loopResults.push(loopContext);
-    }
-    return { loopResults };
-  }
-
-  private async executeAction(config: any, context: any): Promise<any> {
-    return { actionExecuted: true, config };
-  }
-
-  private async saveLog(workflowId: string, status: string, detail: any) {
-    await this.databaseService.query(
-      `INSERT INTO workflow_logs (workflow_id, status, execution_detail) VALUES ($1, $2, $3::jsonb)`,
-      [workflowId, status, JSON.stringify(detail)],
+    const logRes = await this.databaseService.query<{ id: string }>(
+      `INSERT INTO workflow_logs (workflow_id, status, execution_detail) VALUES ($1, $2, $3:jsonb) RETURNING id`,
+      [workflowId, "RUNNING", JSON.stringify({ steps: {}, logs: [] })],
     );
+    const runId = logRes.rows[0].id;
+
+    try {
+      const executionResult = await this.workflowService.executeWorkflowChain(
+        workflow.project_id,
+        workflow.nodes,
+        initialInput,
+      );
+
+      await this.databaseService.query(
+        `UPDATE workflow_logs SET status = $1, execution_detail = $2::jsonb WHERE id = $3`,
+        ["SUCCESS", JSON.stringify(executionResult), runId],
+      );
+
+      return { success: true, runId, ...executionResult };
+    } catch (error: any) {
+      const failDetail = {
+        message: error.message,
+        response: error.getResponse ? error.getResponse() : null,
+      };
+
+      await this.databaseService.query(
+        `UPDATE workflow_logs SET status = $1, execution_detail = $2::jsonb WHERE id = $3`,
+        ["FAILED", JSON.stringify(failDetail), runId],
+      );
+
+      throw new BadRequestException({
+        message: `워크플로우 실행 실패 (Run ID: ${runId})`,
+        error: error.message,
+      });
+    }
+  }
+
+  async getWorkflowRuns(workflowId: string) {
+    const res = await this.databaseService.query(
+      `SELECT id, status, created_at FROM workflow_logs WHERE workflow_id = $1 ORDER BY created_at DESC LIMIT 50`,
+      [workflowId],
+    );
+    return res.rows;
+  }
+
+  async getWorkflowRunDetail(runId: string) {
+    const res = await this.databaseService.query(
+      `SELECT id, workflow_id, status, execution_detail, created_at FROM workflow_logs WHERE id = $1`,
+      [runId],
+    );
+    if (res.rows.length === 0) {
+      throw new NotFoundException(
+        "해당 워크플로우 실행 로그를 찾을 수 없습니다.",
+      );
+    }
+    return res.rows[0];
   }
 }

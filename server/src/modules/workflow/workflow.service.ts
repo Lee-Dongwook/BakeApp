@@ -107,18 +107,23 @@ export class WorkflowService {
             isTrue = Boolean(left);
         }
 
-        return { isTrue, left, operator, right };
+        return {
+          isTrue,
+          branch: isTrue ? "true" : "false",
+          conditionMet: isTrue,
+          left,
+          operator,
+          right,
+        };
       }
 
-      // 1. 반복(LOOP) 액션 처리 추가
       case "LOOP": {
         const { itemsPath, loopActions } = params;
-        // 런타임 컨텍스트에서 순회할 배열 데이터 추출 (예: steps.node_1.data 등)
         const items =
           this.resolvePath(runtimeContext, itemsPath) || params.items || [];
 
         if (!Array.isArray(items)) {
-          throw new Error("LOOP 액션의 대상이 배열이 아닙니다.");
+          throw new TypeError("LOOP 액션의 대상이 배열이 아닙니다.");
         }
 
         const loopResults = [];
@@ -206,10 +211,9 @@ export class WorkflowService {
     }
   }
 
-  // 객체 경로 안전 조회 헬퍼 (예: "steps.node_1.data")
   private resolvePath(obj: any, path: string) {
     if (!path) return undefined;
-    return path.split(".").reduce((acc, part) => acc && acc[part], obj);
+    return path.split(".").reduce((acc, part) => acc?.[part], obj);
   }
 
   private async executeWithRetry(
@@ -240,6 +244,96 @@ export class WorkflowService {
         );
       }
     }
+  }
+
+  async executeWorkflowChain(
+    projectId: string,
+    actions: ActionNode[],
+    clientContext: Record<string, any> = {},
+    client?: SqlExecutor,
+    startActionId?: string,
+  ) {
+    if (!actions || actions.length === 0) {
+      return {
+        success: true,
+        executionLog: ["실행할 액션이 없습니다."],
+        results: {},
+      };
+    }
+
+    const executionLog: string[] = [];
+    const executionResults: Record<string, any> = {};
+    const runtimeContext: Record<string, any> = {
+      ...clientContext,
+      steps: executionResults,
+    };
+
+    const MAX_EXECUTIONS = 100;
+    let executionCount = 0;
+    let currentAction: ActionNode | undefined =
+      actions.find((a) => a.id === startActionId) || actions[0];
+
+    while (currentAction) {
+      executionCount++;
+      if (executionCount > MAX_EXECUTIONS) {
+        throw new BadRequestException({
+          message: "워크플로우 최대 실행 횟수(100회)를 초과하였습니다.",
+          log: executionLog,
+        });
+      }
+
+      executionLog.push(
+        `[Execution] Action Node ID: ${currentAction.id} (${currentAction.type})`,
+      );
+
+      try {
+        const resolvedParams = this.valueResolver.resolve(
+          currentAction.params,
+          runtimeContext,
+        );
+        const result = await this.executeWithRetry(
+          projectId,
+          { ...currentAction, params: resolvedParams },
+          client,
+          runtimeContext,
+        );
+
+        executionResults[currentAction.id] = result;
+        runtimeContext.steps[currentAction.id] = result;
+
+        if (currentAction.type === "CONDITION") {
+          const isTrue = result.isTrue;
+          const nextId = isTrue
+            ? currentAction.trueNextActionId
+            : currentAction.falseNextActionId;
+          currentAction = actions.find((a) => a.id === nextId);
+        } else if (currentAction.nextActionId) {
+          currentAction = actions.find(
+            (a) => a.id === currentAction.nextActionId,
+          );
+        } else {
+          currentAction = undefined;
+        }
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
+        executionLog.push(
+          `[Error] Action Node ID: ${currentAction.id} 실패 - ${errorMessage}`,
+        );
+
+        if (currentAction.errorNextActionId) {
+          currentAction = actions.find(
+            (a) => a.id === currentAction.errorNextActionId,
+          );
+          continue;
+        }
+        throw new BadRequestException({
+          message: `워크플로우 실행 중 에러가 발생했습니다: ${errorMessage}`,
+          log: executionLog,
+        });
+      }
+    }
+    return { success: true, executionLog, results: executionResults };
   }
 
   /**
@@ -317,102 +411,15 @@ export class WorkflowService {
     clientContext: Record<string, any> = {},
   ) {
     const { projectId, trigger, actions, startActionId } = payload;
-
-    if (!actions || actions.length === 0) {
-      return {
-        success: true,
-        trigger,
-        executionLog: ["실행할 액션이 없습니다."],
-      };
-    }
-
-    const executionLog: string[] = [];
-    const executionResults: Record<string, any> = {};
-
-    const runtimeContext: Record<string, any> = {
-      ...clientContext,
-      steps: executionResults,
-    };
-
-    const MAX_EXECUTIONS = 100;
-    let executionCount = 0;
-
     return await this.databaseService.runInTransaction(async (client) => {
-      let currentAction: ActionNode | undefined =
-        actions.find((a) => a.id === startActionId) || actions[0];
-
-      while (currentAction) {
-        executionCount++;
-        if (executionCount > MAX_EXECUTIONS) {
-          throw new BadRequestException({
-            message: "워크플로우 최대 실행 횟수(100회)를 초과하였습니다.",
-            log: executionLog,
-          });
-        }
-
-        executionLog.push(
-          `[Execution] Action Node ID: ${currentAction.id} (${currentAction.type})`,
-        );
-
-        try {
-          const resolvedParams = this.valueResolver.resolve(
-            currentAction.params,
-            runtimeContext,
-          );
-
-          // 2. 재시도 정책(`maxRetries`)이 포함된 실행 래퍼 적용
-          const result = await this.executeWithRetry(
-            projectId,
-            { ...currentAction, params: resolvedParams },
-            client,
-            runtimeContext,
-          );
-
-          executionResults[currentAction.id] = result;
-          runtimeContext.steps[currentAction.id] = result;
-
-          if (currentAction.type === "CONDITION") {
-            const isTrue = result.isTrue;
-            const nextId = isTrue
-              ? currentAction.trueNextActionId
-              : currentAction.falseNextActionId;
-
-            currentAction = actions.find((a) => a.id === nextId);
-          } else if (currentAction.nextActionId) {
-            currentAction = actions.find(
-              (a) => a.id === currentAction.nextActionId,
-            );
-          } else {
-            currentAction = undefined;
-          }
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : String(error);
-
-          executionLog.push(
-            `[Error] Action Node ID: ${currentAction.id} 실패 - ${errorMessage}`,
-          );
-
-          if (currentAction.errorNextActionId) {
-            currentAction = actions.find(
-              (a) => a.id === currentAction.errorNextActionId,
-            );
-            continue;
-          }
-
-          throw new BadRequestException({
-            message: `워크플로우 실행 중 에러가 발생했습니다: ${errorMessage}`,
-            log: executionLog,
-          });
-        }
-      }
-
-      return {
-        success: true,
-        trigger,
-        executionLog,
-        results: executionResults,
-      };
+      const res = await this.executeWorkflowChain(
+        projectId,
+        actions,
+        clientContext,
+        client,
+        startActionId,
+      );
+      return { trigger, ...res };
     });
   }
 }
