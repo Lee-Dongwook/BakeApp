@@ -1,26 +1,23 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
-import { RuntimeCacheService } from "./runtime-cache.service";
+import { ReleaseService } from "../release/release.service";
 import { RuntimeAuditService } from "./runtime-audit.service";
+import { RuntimeCacheService } from "./runtime-cache.service";
 
 @Injectable()
 export class RuntimeDeploymentService {
   constructor(
-    private readonly databaseService: DatabaseService,
+    private readonly releaseService: ReleaseService,
     private readonly cacheService: RuntimeCacheService,
     private readonly auditService: RuntimeAuditService,
   ) {}
 
-  async deployRelease(projectId: string, releaseId: string, userId: string) {
-    await this.databaseService.query(
-      `UPDATE deployments SET status = 'INACTIVE' WHERE project_id = $1 AND environment = 'PRODUCTION'`,
-      [projectId],
-    );
-
-    const result = await this.databaseService.query(
-      `INSERT INTO deployments (project_id, release_id, environment, status)
-       VALUES ($1, $2, 'PRODUCTION', 'ACTIVE') RETURNING *`,
-      [projectId, releaseId],
+  /**
+   * 특정 버전을 활성 프로덕션 배포로 지정하고, 런타임 Manifest 캐시를 무효화합니다.
+   */
+  async deployRelease(projectId: string, versionId: string, userId: string) {
+    const result = await this.releaseService.deployVersion(
+      projectId,
+      versionId,
     );
 
     this.cacheService.invalidateProjectCache(projectId);
@@ -29,28 +26,18 @@ export class RuntimeDeploymentService {
       projectId,
       eventType: "RELEASE_DEPLOY",
       actorId: userId,
-      recordId: releaseId,
-      metadata: { deploymentId: result.rows[0].id },
+      target: "project_deployments",
+      recordId: versionId,
     });
 
-    return result.rows[0];
+    return result;
   }
 
-  async rollbackRelease(
-    projectId: string,
-    targetReleaseId: string,
-    userId: string,
-  ) {
-    await this.databaseService.query(
-      `UPDATE deployments SET status = 'INACTIVE' WHERE project_id = $1 AND environment = 'PRODUCTION'`,
-      [projectId],
-    );
-
-    const result = await this.databaseService.query(
-      `INSERT INTO deployments (project_id, release_id, environment, status)
-       VALUES ($1, $2, 'PRODUCTION', 'ACTIVE') RETURNING *`,
-      [projectId, targetReleaseId],
-    );
+  /**
+   * 직전 버전으로 롤백하고, 런타임 Manifest 캐시를 무효화합니다.
+   */
+  async rollbackRelease(projectId: string, userId: string) {
+    const result = await this.releaseService.rollbackToPrevious(projectId);
 
     this.cacheService.invalidateProjectCache(projectId);
 
@@ -58,9 +45,10 @@ export class RuntimeDeploymentService {
       projectId,
       eventType: "RELEASE_ROLLBACK",
       actorId: userId,
-      recordId: targetReleaseId,
+      target: "project_deployments",
+      recordId: result.deployVersion,
     });
 
-    return result.rows[0];
+    return result;
   }
 }

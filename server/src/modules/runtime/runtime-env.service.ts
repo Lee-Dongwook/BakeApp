@@ -1,9 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { DatabaseService } from "../database/database.service";
+import { EnvironmentService } from "../environment/environment.service";
 
 @Injectable()
 export class RuntimeEnvService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(private readonly environmentService: EnvironmentService) {}
 
   private interpolate(target: any, envMap: Record<string, string>): any {
     if (typeof target === "string") {
@@ -30,21 +30,11 @@ export class RuntimeEnvService {
     return target;
   }
 
+  /**
+   * Secret 값은 EnvironmentService가 복호화한 뒤 반환합니다.
+   */
   async getProjectEnvMap(projectId: string): Promise<Record<string, string>> {
-    const query = `
-      SELECT key, value, is_secret
-      FROM project_environment_variables
-      WHERE project_id = $1;
-    `;
-
-    const res = await this.databaseService.query(query, [projectId]);
-    const envMap: Record<string, string> = {};
-
-    for (const row of res.rows) {
-      envMap[row.key] = row.value;
-    }
-
-    return envMap;
+    return this.environmentService.getResolvedEnvironmentMap(projectId);
   }
 
   async resolveEnvironmentVariables<T>(

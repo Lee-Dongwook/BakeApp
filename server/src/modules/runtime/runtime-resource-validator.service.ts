@@ -3,16 +3,19 @@ import { RuntimeException } from "./runtime.exception";
 
 @Injectable()
 export class RuntimeResourceValidatorService {
+  /**
+   * 배포된 릴리즈 스냅샷에 존재하는 리소스만 실행하도록 막고, 해당 정의를 반환합니다.
+   */
   validateResourceInRelease(
     snapshot: any,
     resourceType: "queries" | "workflows" | "pages",
     resourceId: string,
   ): any {
     const resourceList =
-      snapshot[resourceType] || snapshot.document?.[resourceType] || [];
-    const foundResource = resourceList.some(
-      (item: any) => item.id === resourceId,
-    );
+      snapshot?.[resourceType] || snapshot?.document?.[resourceType] || [];
+    const foundResource = Array.isArray(resourceList)
+      ? resourceList.find((item: any) => item?.id === resourceId)
+      : undefined;
 
     if (!foundResource) {
       const errorCodeMap = {

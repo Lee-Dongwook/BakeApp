@@ -1,5 +1,9 @@
 # public.runtime_users
 
+## Description
+
+프로젝트별 런타임(최종 사용자) 계정
+
 ## Columns
 
 | Name          | Type                     | Default                   | Nullable | Children | Parents                               | Comment |

@@ -385,6 +385,7 @@
     {
       "name": "public.project_environments",
       "type": "BASE TABLE",
+      "comment": "프로젝트별 환경 변수와 암호화된 Secret 값",
       "columns": [
         {
           "name": "created_at",
@@ -590,6 +591,128 @@
           "referenced_columns": [
             "id"
           ]
+        }
+      ]
+    },
+    {
+      "name": "public.project_runtime_settings",
+      "type": "BASE TABLE",
+      "comment": "배포된 프로젝트를 런타임 앱으로 노출하기 위한 슬러그·공개 설정",
+      "columns": [
+        {
+          "name": "auth_required",
+          "type": "boolean",
+          "nullable": false,
+          "default": "true"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        },
+        {
+          "name": "default_page",
+          "type": "text",
+          "nullable": false,
+          "default": "'/'::text"
+        },
+        {
+          "name": "is_public",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "signup_enabled",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "slug",
+          "type": "varchar(100)",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "CURRENT_TIMESTAMP"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "project_runtime_settings_pkey",
+          "def": "CREATE UNIQUE INDEX project_runtime_settings_pkey ON public.project_runtime_settings USING btree (project_id)",
+          "table": "public.project_runtime_settings",
+          "columns": [
+            "project_id"
+          ]
+        },
+        {
+          "name": "project_runtime_settings_slug_key",
+          "def": "CREATE UNIQUE INDEX project_runtime_settings_slug_key ON public.project_runtime_settings USING btree (slug)",
+          "table": "public.project_runtime_settings",
+          "columns": [
+            "slug"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "project_runtime_settings_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (project_id)",
+          "table": "public.project_runtime_settings",
+          "referenced_table": "",
+          "columns": [
+            "project_id"
+          ]
+        },
+        {
+          "name": "project_runtime_settings_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.project_runtime_settings",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "project_runtime_settings_slug_check",
+          "type": "CHECK",
+          "def": "CHECK (((slug)::text ~ '^[a-z0-9]([a-z0-9-]{0,98}[a-z0-9])?$'::text))",
+          "table": "public.project_runtime_settings",
+          "referenced_table": "",
+          "columns": [
+            "slug"
+          ]
+        },
+        {
+          "name": "project_runtime_settings_slug_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (slug)",
+          "table": "public.project_runtime_settings",
+          "referenced_table": "",
+          "columns": [
+            "slug"
+          ]
+        }
+      ],
+      "triggers": [
+        {
+          "name": "update_project_runtime_settings_updated_at",
+          "def": "CREATE TRIGGER update_project_runtime_settings_updated_at BEFORE UPDATE ON public.project_runtime_settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
         }
       ]
     },
@@ -1046,6 +1169,7 @@
     {
       "name": "public.runtime_users",
       "type": "BASE TABLE",
+      "comment": "프로젝트별 런타임(최종 사용자) 계정",
       "columns": [
         {
           "name": "created_at",
@@ -1506,6 +1630,11 @@
           "nullable": true
         },
         {
+          "name": "definition_snapshot",
+          "type": "jsonb",
+          "nullable": true
+        },
+        {
           "name": "error",
           "type": "jsonb",
           "nullable": true
@@ -1520,6 +1649,17 @@
           "type": "uuid",
           "nullable": false,
           "default": "gen_random_uuid()"
+        },
+        {
+          "name": "initiator_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "initiator_type",
+          "type": "text",
+          "nullable": false,
+          "default": "'BUILDER_USER'::text"
         },
         {
           "name": "input",
@@ -1566,6 +1706,16 @@
         }
       ],
       "indexes": [
+        {
+          "name": "workflow_runs_initiator_created_at_idx",
+          "def": "CREATE INDEX workflow_runs_initiator_created_at_idx ON public.workflow_runs USING btree (initiator_type, initiator_id, created_at DESC)",
+          "table": "public.workflow_runs",
+          "columns": [
+            "initiator_type",
+            "initiator_id",
+            "created_at"
+          ]
+        },
         {
           "name": "workflow_runs_pkey",
           "def": "CREATE UNIQUE INDEX workflow_runs_pkey ON public.workflow_runs USING btree (id)",
@@ -1615,6 +1765,16 @@
           ],
           "referenced_columns": [
             "id"
+          ]
+        },
+        {
+          "name": "workflow_runs_initiator_type_check",
+          "type": "CHECK",
+          "def": "CHECK ((initiator_type = ANY (ARRAY['BUILDER_USER'::text, 'RUNTIME_USER'::text, 'SYSTEM'::text])))",
+          "table": "public.workflow_runs",
+          "referenced_table": "",
+          "columns": [
+            "initiator_type"
           ]
         },
         {
@@ -2087,6 +2247,19 @@
         "project_id"
       ],
       "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.project_runtime_settings",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_one",
       "parent_table": "public.projects",
       "parent_columns": [
         "id"

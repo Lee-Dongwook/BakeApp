@@ -1,5 +1,9 @@
 # public.project_environments
 
+## Description
+
+프로젝트별 환경 변수와 암호화된 Secret 값
+
 ## Columns
 
 | Name       | Type                     | Default           | Nullable | Children | Parents                               | Comment |

@@ -3,9 +3,10 @@ import { QueryBuilderController } from "./query-builder.controller";
 import { QueryBuilderService } from "./query-builder.service";
 import { DatabaseModule } from "../database/database.module";
 import { ProjectModule } from "../project/project.module";
+import { AuthModule } from "../auth/auth.module";
 
 @Module({
-  imports: [DatabaseModule, ProjectModule],
+  imports: [AuthModule, DatabaseModule, ProjectModule],
   controllers: [QueryBuilderController],
   providers: [QueryBuilderService],
   exports: [QueryBuilderService],

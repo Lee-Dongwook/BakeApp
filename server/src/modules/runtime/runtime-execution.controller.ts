@@ -39,11 +39,9 @@ export class RuntimeExecutionController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const { manifest, releaseVersion } =
+    const { manifest, releaseVersion, snapshot } =
       await this.appResolver.resolveBySlug(slug);
     const projectId = manifest.app.id;
-
-    const snapshot = (manifest as any).rawSnapshot || manifest.document;
 
     const queryDef = this.resourceValidator.validateResourceInRelease(
       snapshot,
@@ -80,10 +78,9 @@ export class RuntimeExecutionController {
     @Req() req: any,
     @Res() res: Response,
   ) {
-    const { manifest, releaseVersion } =
+    const { manifest, releaseVersion, snapshot } =
       await this.appResolver.resolveBySlug(slug);
     const projectId = manifest.app.id;
-    const snapshot = (manifest as any).rawSnapshot || manifest.document;
 
     this.resourceValidator.validateResourceInRelease(
       snapshot,

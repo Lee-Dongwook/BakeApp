@@ -17,6 +17,8 @@ import { ReleaseModule } from "./modules/release/release.module";
 import { EnvironmentModule } from "./modules/environment/environment.module";
 import { RuntimeAuthModule } from "./modules/runtime-auth/runtime-auth.module";
 import { ExternalDatasourceModule } from "./modules/datasource/external-datasource.module";
+import { RuntimeModule } from "./modules/runtime/runtime.module";
+import { LocalStorageModule } from "./modules/storage/local-storage.module";
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { ExternalDatasourceModule } from "./modules/datasource/external-datasour
     AuditModule,
     EnvironmentModule,
     RuntimeAuthModule,
+    RuntimeModule,
+    LocalStorageModule,
     ServeStaticModule.forRoot({
       rootPath: path.join(process.cwd(), "uploads"),
       serveRoot: "/uploads",

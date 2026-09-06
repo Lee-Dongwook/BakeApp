@@ -1,5 +1,6 @@
 import { Injectable, HttpStatus } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
+import { RuntimeCacheService } from "./runtime-cache.service";
 import { RuntimeException } from "./runtime.exception";
 
 export interface RuntimeManifest {
@@ -25,9 +26,19 @@ export interface RuntimeManifest {
   };
 }
 
+export interface RuntimeResolution {
+  manifest: RuntimeManifest;
+  releaseVersion: number;
+  /** 배포된 릴리즈 스냅샷 원본 (릴리즈 격리 검증에 사용) */
+  snapshot: any;
+}
+
 @Injectable()
 export class RuntimeAppResolverService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly cacheService: RuntimeCacheService,
+  ) {}
 
   private buildSanitizedDocument(snapshot: any) {
     const pages = Array.isArray(snapshot.pages)
@@ -45,11 +56,13 @@ export class RuntimeAppResolverService {
     };
   }
 
-  async resolveBySlug(
-    slug: string,
-  ): Promise<{ manifest: RuntimeManifest; releaseVersion: number }> {
+  async resolveBySlug(slug: string): Promise<RuntimeResolution> {
+    const cached = this.cacheService.get<RuntimeResolution>(slug);
+    if (cached) return cached;
+
     const settingsQuery = `
-      SELECT s.*, p.name as project_name
+      SELECT s.project_id, s.slug, s.is_public, s.auth_required,
+             s.signup_enabled, s.default_page, p.name AS project_name
       FROM project_runtime_settings s
       JOIN projects p ON p.id = s.project_id
       WHERE s.slug = $1;
@@ -67,15 +80,17 @@ export class RuntimeAppResolverService {
 
     const settings = settingsRes.rows[0];
 
+    // project_deployments는 프로젝트별 활성 프로덕션 버전을 단일 행으로 관리합니다.
     const deploymentQuery = `
-      SELECT d.id as deployment_id, d.created_at as deployed_at,
-             r.id as release_id, r.version as release_version, r.snapshot
-      FROM deployments d
-      JOIN releases r ON r.id = d.release_id
-      WHERE d.project_id = $1 AND d.environment = 'PRODUCTION' AND d.status = 'ACTIVE'
-      ORDER BY d.created_at DESC
-      LIMIT 1;
-      `;
+      SELECT d.updated_at AS deployed_at,
+             v.id AS release_id,
+             v.version_number AS release_version,
+             v.snapshot
+      FROM project_deployments d
+      JOIN project_versions v
+        ON v.project_id = d.project_id AND v.id = d.active_version_id
+      WHERE d.project_id = $1;
+    `;
 
     const deploymentRes = await this.databaseService.query(deploymentQuery, [
       settings.project_id,
@@ -92,8 +107,6 @@ export class RuntimeAppResolverService {
     const deployment = deploymentRes.rows[0];
     const rawSnapshot = deployment.snapshot || {};
 
-    const sanitizedDocument = this.buildSanitizedDocument(rawSnapshot);
-
     const manifest: RuntimeManifest = {
       app: {
         id: settings.project_id,
@@ -103,7 +116,7 @@ export class RuntimeAppResolverService {
       release: {
         id: deployment.release_id,
         version: deployment.release_version,
-        deployedAt: deployment.deployed_at,
+        deployedAt: new Date(deployment.deployed_at).toISOString(),
       },
       runtime: {
         isPublic: settings.is_public,
@@ -111,9 +124,17 @@ export class RuntimeAppResolverService {
         signupEnabled: settings.signup_enabled,
         defaultPage: settings.default_page,
       },
-      document: sanitizedDocument,
+      document: this.buildSanitizedDocument(rawSnapshot),
     };
 
-    return { manifest, releaseVersion: deployment.release_version };
+    const resolution: RuntimeResolution = {
+      manifest,
+      releaseVersion: deployment.release_version,
+      snapshot: rawSnapshot,
+    };
+
+    this.cacheService.set(slug, settings.project_id, resolution);
+
+    return resolution;
   }
 }

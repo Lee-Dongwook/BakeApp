@@ -48,3 +48,9 @@ comments:
     tableComment: 워크플로우 실행 단위의 상태·입출력·오류 이력
   - table: workflow_step_runs
     tableComment: 워크플로우 실행 단계별 상태·재시도·처리 시간 이력
+  - table: project_runtime_settings
+    tableComment: 배포된 프로젝트를 런타임 앱으로 노출하기 위한 슬러그·공개 설정
+  - table: project_environments
+    tableComment: 프로젝트별 환경 변수와 암호화된 Secret 값
+  - table: runtime_users
+    tableComment: 프로젝트별 런타임(최종 사용자) 계정

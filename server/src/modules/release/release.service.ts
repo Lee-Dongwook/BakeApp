@@ -5,12 +5,14 @@ import {
 } from "@nestjs/common";
 import { DatabaseService } from "../database/database.service";
 import { SchemaRegistryService } from "../schema/schema-registry.service";
+import { RuntimeCacheService } from "../runtime/runtime-cache.service";
 
 @Injectable()
 export class ReleaseService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly schemaRegistry: SchemaRegistryService,
+    private readonly runtimeCacheService: RuntimeCacheService,
   ) {}
 
   async createVersion(
@@ -68,6 +70,9 @@ export class ReleaseService {
        DO UPDATE SET active_version_id = $2, updated_at = CURRENT_TIMESTAMP`,
       [projectId, versionId],
     );
+
+    // 배포가 바뀌면 런타임 Manifest 캐시를 비워 다음 요청이 새 릴리즈를 읽도록 합니다.
+    this.runtimeCacheService.invalidateProjectCache(projectId);
 
     return { success: true, deployVersion: versionId };
   }
