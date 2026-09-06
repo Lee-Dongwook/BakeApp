@@ -49,7 +49,7 @@ export class WorkflowEngineService {
     }
 
     const logRes = await this.databaseService.query<{ id: string }>(
-      `INSERT INTO workflow_logs (workflow_id, status, execution_detail) VALUES ($1, $2, $3:jsonb) RETURNING id`,
+      `INSERT INTO workflow_logs (workflow_id, status, execution_detail) VALUES ($1, $2, $3::jsonb) RETURNING id`,
       [workflowId, "RUNNING", JSON.stringify({ steps: {}, logs: [] })],
     );
     const runId = logRes.rows[0].id;
