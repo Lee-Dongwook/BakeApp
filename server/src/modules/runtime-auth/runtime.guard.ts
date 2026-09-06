@@ -2,9 +2,10 @@ import {
   CanActivate,
   ExecutionContext,
   Injectable,
-  UnauthorizedException,
+  HttpStatus,
 } from "@nestjs/common";
 import { RuntimeAuthService } from "./runtime-auth.service";
+import { RuntimeException } from "../runtime/runtime.exception";
 
 @Injectable()
 export class RuntimeGuard implements CanActivate {
@@ -15,13 +16,31 @@ export class RuntimeGuard implements CanActivate {
     const authHeader = request.headers.authorization;
 
     if (!authHeader?.startsWith("Bearer ")) {
-      throw new UnauthorizedException("Runtime 인증 토큰이 필요합니다.");
+      throw new RuntimeException(
+        "RUNTIME_AUTH_REQUIRED",
+        "Runtime 인증 토큰이 필요합니다.",
+        HttpStatus.UNAUTHORIZED,
+      );
     }
 
     const token = authHeader.split(" ")[1];
-    const payload = await this.runtimeAuthService.validateToken(token);
+    try {
+      const payload = await this.runtimeAuthService.validateToken(token);
 
-    request.runtimeUser = payload;
-    return true;
+      request.runtimeUser = {
+        id: payload.sub || payload.id,
+        email: payload.email,
+        role: payload.role || "USER",
+        metadata: payload.metadata || {},
+      };
+
+      return true;
+    } catch {
+      throw new RuntimeException(
+        "RUNTIME_AUTH_REQUIRED",
+        "유효하지 않거나 만료된 Runtime 토큰입니다.",
+        HttpStatus.UNAUTHORIZED,
+      );
+    }
   }
 }
