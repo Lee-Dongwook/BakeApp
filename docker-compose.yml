@@ -5,9 +5,12 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-bakeapp}
       POSTGRES_USER: ${POSTGRES_USER:-bakeapp}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bakeapp}
+    # 호스트에 이미 5432를 쓰는 Postgres가 있으므로 5433으로 노출합니다.
+    # 스키마는 initdb가 아니라 `pnpm db:migrate`가 단독으로 책임집니다.
+    ports:
+      - "5433:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./server/migrations:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
       interval: 5s

@@ -6,16 +6,16 @@
 
 ## Columns
 
-| Name          | Type                     | Default                   | Nullable | Children | Parents                               | Comment |
-| ------------- | ------------------------ | ------------------------- | -------- | -------- | ------------------------------------- | ------- |
-| created_at    | timestamp with time zone | CURRENT_TIMESTAMP         | true     |          |                                       |         |
-| email         | varchar(255)             |                           | false    |          |                                       |         |
-| id            | uuid                     | gen_random_uuid()         | false    |          |                                       |         |
-| metadata      | jsonb                    | '{}'::jsonb               | true     |          |                                       |         |
-| password_hash | varchar(255)             |                           | false    |          |                                       |         |
-| project_id    | uuid                     |                           | false    |          | [public.projects](public.projects.md) |         |
-| role          | varchar(50)              | 'user'::character varying | false    |          |                                       |         |
-| updated_at    | timestamp with time zone | CURRENT_TIMESTAMP         | true     |          |                                       |         |
+| Name          | Type                     | Default                   | Nullable | Children                                                  | Parents                               | Comment |
+| ------------- | ------------------------ | ------------------------- | -------- | --------------------------------------------------------- | ------------------------------------- | ------- |
+| created_at    | timestamp with time zone | CURRENT_TIMESTAMP         | true     |                                                           |                                       |         |
+| email         | varchar(255)             |                           | false    |                                                           |                                       |         |
+| id            | uuid                     | gen_random_uuid()         | false    | [public.runtime_user_roles](public.runtime_user_roles.md) |                                       |         |
+| metadata      | jsonb                    | '{}'::jsonb               | true     |                                                           |                                       |         |
+| password_hash | varchar(255)             |                           | false    |                                                           |                                       |         |
+| project_id    | uuid                     |                           | false    |                                                           | [public.projects](public.projects.md) |         |
+| role          | varchar(50)              | 'user'::character varying | false    |                                                           |                                       |         |
+| updated_at    | timestamp with time zone | CURRENT_TIMESTAMP         | true     |                                                           |                                       |         |
 
 ## Constraints
 

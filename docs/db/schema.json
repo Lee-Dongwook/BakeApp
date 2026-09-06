@@ -1167,6 +1167,444 @@
       ]
     },
     {
+      "name": "public.runtime_permissions",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "action",
+          "type": "varchar(32)",
+          "nullable": false
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "resource_id",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "resource_type",
+          "type": "varchar(32)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "runtime_permissions_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_permissions_pkey ON public.runtime_permissions USING btree (id)",
+          "table": "public.runtime_permissions",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_permissions_project_id_resource_type_resource_id_ac_key",
+          "def": "CREATE UNIQUE INDEX runtime_permissions_project_id_resource_type_resource_id_ac_key ON public.runtime_permissions USING btree (project_id, resource_type, resource_id, action)",
+          "table": "public.runtime_permissions",
+          "columns": [
+            "project_id",
+            "resource_type",
+            "resource_id",
+            "action"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_permissions_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.runtime_permissions",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_permissions_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.runtime_permissions",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_permissions_project_id_resource_type_resource_id_ac_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, resource_type, resource_id, action)",
+          "table": "public.runtime_permissions",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "resource_type",
+            "resource_id",
+            "action"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.runtime_role_permissions",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "permission_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "role_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "runtime_role_permissions_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_role_permissions_pkey ON public.runtime_role_permissions USING btree (role_id, permission_id)",
+          "table": "public.runtime_role_permissions",
+          "columns": [
+            "role_id",
+            "permission_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_role_permissions_permission_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (permission_id) REFERENCES runtime_permissions(id) ON DELETE CASCADE",
+          "table": "public.runtime_role_permissions",
+          "referenced_table": "public.runtime_permissions",
+          "columns": [
+            "permission_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_role_permissions_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (role_id, permission_id)",
+          "table": "public.runtime_role_permissions",
+          "referenced_table": "",
+          "columns": [
+            "role_id",
+            "permission_id"
+          ]
+        },
+        {
+          "name": "runtime_role_permissions_role_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE",
+          "table": "public.runtime_role_permissions",
+          "referenced_table": "public.runtime_roles",
+          "columns": [
+            "role_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.runtime_roles",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "description",
+          "type": "text",
+          "nullable": true
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "is_default",
+          "type": "boolean",
+          "nullable": false,
+          "default": "false"
+        },
+        {
+          "name": "name",
+          "type": "varchar(64)",
+          "nullable": false
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "runtime_roles_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_roles_pkey ON public.runtime_roles USING btree (id)",
+          "table": "public.runtime_roles",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_roles_project_id_name_key",
+          "def": "CREATE UNIQUE INDEX runtime_roles_project_id_name_key ON public.runtime_roles USING btree (project_id, name)",
+          "table": "public.runtime_roles",
+          "columns": [
+            "project_id",
+            "name"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_roles_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.runtime_roles",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_roles_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.runtime_roles",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_roles_project_id_name_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (project_id, name)",
+          "table": "public.runtime_roles",
+          "referenced_table": "",
+          "columns": [
+            "project_id",
+            "name"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.runtime_row_level_policies",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "action",
+          "type": "varchar(32)",
+          "nullable": false,
+          "default": "'READ'::character varying"
+        },
+        {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "filter_expression",
+          "type": "text",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "uuid",
+          "nullable": false,
+          "default": "gen_random_uuid()"
+        },
+        {
+          "name": "project_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "role_id",
+          "type": "uuid",
+          "nullable": true
+        },
+        {
+          "name": "table_name",
+          "type": "varchar(64)",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_runtime_rlp_table",
+          "def": "CREATE INDEX idx_runtime_rlp_table ON public.runtime_row_level_policies USING btree (project_id, table_name)",
+          "table": "public.runtime_row_level_policies",
+          "columns": [
+            "project_id",
+            "table_name"
+          ]
+        },
+        {
+          "name": "runtime_row_level_policies_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_row_level_policies_pkey ON public.runtime_row_level_policies USING btree (id)",
+          "table": "public.runtime_row_level_policies",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_row_level_policies_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.runtime_row_level_policies",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_row_level_policies_project_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE",
+          "table": "public.runtime_row_level_policies",
+          "referenced_table": "public.projects",
+          "columns": [
+            "project_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_row_level_policies_role_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE",
+          "table": "public.runtime_row_level_policies",
+          "referenced_table": "public.runtime_roles",
+          "columns": [
+            "role_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
+      "name": "public.runtime_user_roles",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "role_id",
+          "type": "uuid",
+          "nullable": false
+        },
+        {
+          "name": "user_id",
+          "type": "uuid",
+          "nullable": false
+        }
+      ],
+      "indexes": [
+        {
+          "name": "idx_runtime_user_roles_user",
+          "def": "CREATE INDEX idx_runtime_user_roles_user ON public.runtime_user_roles USING btree (user_id)",
+          "table": "public.runtime_user_roles",
+          "columns": [
+            "user_id"
+          ]
+        },
+        {
+          "name": "runtime_user_roles_pkey",
+          "def": "CREATE UNIQUE INDEX runtime_user_roles_pkey ON public.runtime_user_roles USING btree (user_id, role_id)",
+          "table": "public.runtime_user_roles",
+          "columns": [
+            "user_id",
+            "role_id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "runtime_user_roles_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (user_id, role_id)",
+          "table": "public.runtime_user_roles",
+          "referenced_table": "",
+          "columns": [
+            "user_id",
+            "role_id"
+          ]
+        },
+        {
+          "name": "runtime_user_roles_role_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE",
+          "table": "public.runtime_user_roles",
+          "referenced_table": "public.runtime_roles",
+          "columns": [
+            "role_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        },
+        {
+          "name": "runtime_user_roles_user_id_fkey",
+          "type": "FOREIGN KEY",
+          "def": "FOREIGN KEY (user_id) REFERENCES runtime_users(id) ON DELETE CASCADE",
+          "table": "public.runtime_user_roles",
+          "referenced_table": "public.runtime_users",
+          "columns": [
+            "user_id"
+          ],
+          "referenced_columns": [
+            "id"
+          ]
+        }
+      ]
+    },
+    {
       "name": "public.runtime_users",
       "type": "BASE TABLE",
       "comment": "프로젝트별 런타임(최종 사용자) 계정",
@@ -1285,6 +1723,69 @@
         {
           "name": "update_runtime_users_updated_at",
           "def": "CREATE TRIGGER update_runtime_users_updated_at BEFORE UPDATE ON public.runtime_users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()"
+        }
+      ]
+    },
+    {
+      "name": "public.schema_migrations",
+      "type": "BASE TABLE",
+      "columns": [
+        {
+          "name": "executed_at",
+          "type": "timestamp with time zone",
+          "nullable": false,
+          "default": "now()"
+        },
+        {
+          "name": "filename",
+          "type": "varchar(255)",
+          "nullable": false
+        },
+        {
+          "name": "id",
+          "type": "integer",
+          "nullable": false,
+          "default": "nextval('schema_migrations_id_seq'::regclass)"
+        }
+      ],
+      "indexes": [
+        {
+          "name": "schema_migrations_filename_key",
+          "def": "CREATE UNIQUE INDEX schema_migrations_filename_key ON public.schema_migrations USING btree (filename)",
+          "table": "public.schema_migrations",
+          "columns": [
+            "filename"
+          ]
+        },
+        {
+          "name": "schema_migrations_pkey",
+          "def": "CREATE UNIQUE INDEX schema_migrations_pkey ON public.schema_migrations USING btree (id)",
+          "table": "public.schema_migrations",
+          "columns": [
+            "id"
+          ]
+        }
+      ],
+      "constraints": [
+        {
+          "name": "schema_migrations_filename_key",
+          "type": "UNIQUE",
+          "def": "UNIQUE (filename)",
+          "table": "public.schema_migrations",
+          "referenced_table": "",
+          "columns": [
+            "filename"
+          ]
+        },
+        {
+          "name": "schema_migrations_pkey",
+          "type": "PRIMARY KEY",
+          "def": "PRIMARY KEY (id)",
+          "table": "public.schema_migrations",
+          "referenced_table": "",
+          "columns": [
+            "id"
+          ]
         }
       ]
     },
@@ -2331,6 +2832,110 @@
       ],
       "parent_cardinality": "exactly_one",
       "def": "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_permissions",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_role_permissions",
+      "columns": [
+        "role_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.runtime_roles",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_role_permissions",
+      "columns": [
+        "permission_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.runtime_permissions",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (permission_id) REFERENCES runtime_permissions(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_roles",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_row_level_policies",
+      "columns": [
+        "project_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.projects",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_row_level_policies",
+      "columns": [
+        "role_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.runtime_roles",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "zero_or_one",
+      "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_user_roles",
+      "columns": [
+        "user_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.runtime_users",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (user_id) REFERENCES runtime_users(id) ON DELETE CASCADE"
+    },
+    {
+      "table": "public.runtime_user_roles",
+      "columns": [
+        "role_id"
+      ],
+      "cardinality": "zero_or_more",
+      "parent_table": "public.runtime_roles",
+      "parent_columns": [
+        "id"
+      ],
+      "parent_cardinality": "exactly_one",
+      "def": "FOREIGN KEY (role_id) REFERENCES runtime_roles(id) ON DELETE CASCADE"
     },
     {
       "table": "public.runtime_users",
