@@ -178,6 +178,62 @@ export class QueryBuilderService {
     );
   }
 
+  async applyRowLevelPolicies(
+    projectId: string,
+    tableName: string,
+    action: "READ" | "UPDATE" | "DELETE",
+    currentUser: any,
+    existingWhereClause: string = "",
+  ): Promise<{ sqlWhere: string; params: any[] }> {
+    if (!currentUser) {
+      return { sqlWhere: existingWhereClause, params: [] };
+    }
+
+    const rlpQuery = `
+      SELECT rlp.filter_expression
+      FROM runtime_row_level_policies rlp
+      LEFT JOIN runtime_user_roles ur ON (rlp.role_id IS NULL OR rlp.role_id = ur.role_id)
+      WHERE rlp.project_id = $1 
+        AND rlp.table_name = $2 
+        AND rlp.action = $3
+        AND (rlp.role_id IS NULL OR ur.user_id = $4);
+    `;
+
+    const rlpRes = await this.databaseService.query(rlpQuery, [
+      projectId,
+      tableName,
+      action,
+      currentUser.id,
+    ]);
+
+    if (rlpRes.rows.length === 0) {
+      return { sqlWhere: existingWhereClause, params: [] };
+    }
+
+    const injectedConditions: string[] = [];
+    const params: any[] = [];
+    let paramIdx = 1;
+
+    for (const row of rlpRes.rows) {
+      let expr = row.filter_expression;
+
+      expr = expr.replace(/\{\{\s*currentUser\.id\s*\}\}/g, (_, key) => {
+        const val = currentUser.metadata?.[key] ?? null;
+        params.push(val);
+        return `$${paramIdx++}`;
+      });
+
+      injectedConditions.push(`(${expr})`);
+    }
+
+    const combinedRLP = injectedConditions.join(" AND ");
+    const finalWhere = existingWhereClause
+      ? `(${existingWhereClause}) AND (${combinedRLP})`
+      : `WHERE ${combinedRLP}`;
+
+    return { sqlWhere: finalWhere, params };
+  }
+
   private parseSqlParameters(sql: string, params: Record<string, any>) {
     const queryParams: any[] = [];
     let paramIndex = 1;
